@@ -1,0 +1,118 @@
+<?php
+
+// $Id: pi_inquiry.install,v 0.1 $
+
+/**
+ * Implementation of hook_install(): creates the database table for pi_inquiry
+ */
+function pi_inquiry_install() {
+  // Create tables.
+  drupal_install_schema('pi_inquiry');
+  //Options are status, promote, sticky, revision
+  variable_set("node_options_pi_inquiry", array('status'));
+  variable_set("comment_pi_inquiry", COMMENT_NODE_DISABLED);
+  variable_set('upload_pi_inquiry', 0);
+}
+
+/**
+ * Implementation of hook_uninstall(): removes the pi_inquiry table
+ */
+function pi_inquiry_uninstall() {
+  // Remove tables.
+  drupal_uninstall_schema('pi_inquiry');
+  //Options are status, promote, sticky, revision
+  variable_del("node_options_pi_inquiry");
+  variable_del("comment_pi_inquiry");
+  variable_del('upload_pi_inquiry');
+}
+
+/**
+ * Implementation of hook_schema(): Describes the pi_inquiry table
+ */
+function pi_inquiry_schema() {
+
+  $schema = array();
+
+  $schema['pi_inquiry'] = array(
+      'description' => 'PI Inquiry',
+      'fields' => array(
+          'nid' => array(
+              'description' => 'node id',
+              'type' => 'int',
+              'size' => 'normal',
+              'unsigned' => TRUE,
+              'not null' => TRUE,
+              'default' => 0),
+          'vid' => array(
+              'description' => 'The current vid version identifier',
+              'type' => 'int',
+              'size' => 'normal',
+              'unsigned' => TRUE,
+              'not null' => TRUE,
+              'default' => 0),
+          'image' => array(
+              'description' => 'image file name',
+              'type' => 'text',
+              'size' => 'medium',
+              'default' => NULL),
+          'frontpage' => array(
+              'description' => 'Front page',
+              'type' => 'text',
+              'size' => 'normal'),
+          'forum' => array(
+              'description' => 'related forum',
+              'type' => 'int',
+              'size' => 'normal',
+              'unsigned' => TRUE,
+              'not null' => TRUE,
+              'default' => 0),
+          'supervised' => array(
+              'description' => 'Whether the inquiry has a supervisor',
+              'type' => 'int',
+              'size' => 'tiny',
+              'not null' => TRUE,
+              'default' => 0),
+          'roles' => array(
+              'description' => 'Role information',
+              'type' => 'text',
+              'size' => 'normal'),
+          'participants_selection' => array(
+              'type' => 'text',
+              'size' => 'small',
+              'description' => 'Type of participant selection (justme/group/anyone)'),
+          'participants_cohort' => array(
+              'type' => 'int',
+              'size' => 'normal',
+              'unsigned' => TRUE,
+              'not null' => FALSE,
+              'default' => NULL,
+              'description' => 'Participants selection group (expect for anyone)'),
+          'group_creation' => array(
+              'description' => 'Group creation policy',
+              'type' => 'text',
+              'size' => 'normal'),
+          'actor_gid' => array(
+              'type' => 'int',
+              'size' => 'normal',
+              'unsigned' => TRUE,
+              'not null' => FALSE,
+              'default' => NULL,
+              'description' => 'The inquiry actor group id'),
+          'weight' => array(
+              'description' => 'The default layout order in the inquiry list.',
+              'type' => 'int',
+              'size' => 'normal',
+              'unsigned' => TRUE,
+              'not null' => TRUE,
+              'default' => 0)),
+      'primary key' => array('nid', 'vid'),
+      'unique keys' => array('vid' => array('vid')),
+      'indexes' => array('nid' => array('nid'))
+  );
+
+
+
+
+  return $schema;
+}
+

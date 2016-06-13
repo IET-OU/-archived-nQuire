@@ -1,0 +1,10 @@
+; $Id: pi_authoring.info, 20100303 MCP $
+name = nQuire Creator VM
+project = nquire
+description = This module enables the creation of inquires that integrate the Virtual Microscope.
+package = nQuire Creator Plugins
+
+dependencies[] = inquiry_available_features
+
+core = 6.x
+version = "6.x-13.01-dev"

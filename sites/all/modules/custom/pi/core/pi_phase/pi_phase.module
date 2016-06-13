@@ -1,0 +1,210 @@
+<?php
+
+// $Id: pi_phase.module,v 0.1 2010/03/17 MCP $
+
+/**
+ * @file  This module provides the implementation of the Inquiry Phase content type
+ */
+
+/**
+ * Define the pi_inquiry node type
+ */
+function pi_phase_node_info() {
+  return array(
+      'pi_phase' => array(
+          'name' => t('Inquiry Phase'), // Required.
+          'module' => 'pi_phase', // Required.
+          'description' => t('This is the Inquiry Phase content type for nQuire'), // Required.
+          'has_title' => TRUE,
+          'title_label' => t('Phase Name'),
+          'has_body' => TRUE,
+          'body_label' => t('Phase Description'),
+          'min_word_count' => 1,
+      )
+  );
+}
+
+/**
+ * Define permissions available for pi_inquiry module
+ */
+function pi_phase_perm() {
+  return array('create inquiry', 'edit own inquiry', 'edit any inquiry', 'delete own inquiry', 'delete any inquiry');
+}
+
+/**
+ * Work out if a user has permission to do something with an Inquiry
+ */
+function pi_phase_access($op, $node, $account) {
+  $inquiry_info = pi_info()->getInquiryInfo($node->inquiry_nid);
+  return $inquiry_info->userIsInquiryAdmin($account->uid);
+}
+
+/**
+ * The form for adding/editing an Inquiry
+ */
+function pi_phase_form($node) {
+  $form = array();
+
+  return $form;
+}
+
+/**
+ * hook_insert() - INSERT command for a new inquiry phase
+ */
+function pi_phase_insert($node) {
+  $data_to_write = new stdClass();
+  $data_to_write->nid = $node->nid;
+  $data_to_write->vid = $node->vid;
+  $data_to_write->inquiry_nid = $node->inquiry_nid;
+  $data_to_write->weight = $node->weight;
+  $data_to_write->collaboration = $node->collaboration;
+  $result = drupal_write_record('pi_phase', $data_to_write);
+  if ($result != SAVED_NEW) {
+    $result_string = _pi_write_record_result_string($result);
+    drupal_set_message(t('Problem saving Phase data - saved returned a value of %value.', array('%value' => $result_string)), 'error');
+  }
+}
+
+/**
+ * hook_update() - UPDATE command for an existing inquiry phase
+ */
+function pi_phase_update($node) {
+  if ($node->revision) {
+    // New revision; treat it as a new record.
+    pi_phase_insert($node);
+  } else {
+    $data_to_write = new stdClass();
+    $data_to_write->nid = $node->nid;
+    $data_to_write->vid = $node->vid;
+    $data_to_write->inquiry_nid = $node->inquiry_nid;
+    $data_to_write->weight = $node->weight;
+    $data_to_write->collaboration = $node->collaboration;
+    $result = drupal_write_record('pi_phase', $data_to_write, array('nid', 'vid'));
+    if ($result != SAVED_UPDATED) {
+      $result_string = _pi_write_record_result_string($result);
+      drupal_set_message(t('Problem saving Phase data - saved returned a value of %value.', array('%value' => $result_string)), 'error');
+    }
+  }
+}
+
+/**
+ * hook_nodeapi().
+ *
+ * When a node revision is deleted, we need to remove the corresponding record
+ * from our table. The only way to handle revision deletion is by implementing
+ * hook_nodeapi().
+ */
+function pi_phase_nodeapi(&$node, $op, $teaser, $page) {
+  switch ($op) {
+    case 'delete revision':
+      // Notice that we're matching a single revision based on the node's vid.
+      db_query('DELETE FROM {pi_phase} WHERE vid = %d', $node->vid);
+      break;
+  }
+}
+
+/**
+ * hook_delete() DELETE command for an inquiry
+ * @todo this should delete all the associated data with the inquiry too!
+ */
+function pi_phase_delete(&$node) {
+  // Delete the related information we were saving for this node.
+  db_query('DELETE FROM {pi_phase} WHERE nid = %d', $node->nid);
+}
+
+/**
+ * Custom loader for phase type (called when %phase is specified in a menu parameter)
+ */
+function pi_phase_load($node) {
+  $return = db_fetch_object(db_query('SELECT `inquiry_nid`, `weight`, `collaboration` FROM {pi_phase} WHERE vid = %d', $node->vid));
+  return $return;
+}
+
+/**
+ * Queries the node database to provide a list of nids referring to phases in an
+ * inquiry given by $inquiry_nid, ordered by weight
+ * Use node_load($nid) to then access the phase details
+ * @param uint $inquiry_nid the nid of the inquiry to load the phases for
+ * @return array of nids referring to pi_phase nodes in the given inquiry
+ */
+function pi_phase_load_nids_for_inquiry($inquiry_nid) {
+  $query = "SELECT {node}.`nid` FROM {node} "
+          . "LEFT JOIN {pi_phase} ON node.`vid`= pi_phase.`vid` "
+          . "WHERE inquiry_nid = %d ORDER BY weight";
+
+  $result = db_query($query, $inquiry_nid);
+  $phase_nodes = array();
+  while ($nid = db_result($result)) {
+    $phase_nodes[] = $nid;
+  }
+  return $phase_nodes;
+}
+
+/**
+ * Queries the node database to provide a list of nids referring to phases in an
+ * inquiry given by $inquiry_nid, ordered by weight
+ * Use node_load($nid) to then access the phase details
+ * @param uint $inquiry_nid the nid of the inquiry to load the phases for
+ * @return array of nids referring to pi_phase nodes in the given inquiry
+ */
+function pi_phase_load_nids_for_inquiry_and_collaboration_type($inquiry_nid, $collaboration_type) {
+  $query = "SELECT {node}.`nid` FROM {node} "
+          . "LEFT JOIN {pi_phase} ON node.`vid`= pi_phase.`vid` "
+          . "WHERE inquiry_nid = %d AND collaboration = '%s' ORDER BY weight";
+
+  $result = db_query($query, $inquiry_nid, $collaboration_type);
+  $phase_nodes = array();
+  while ($nid = db_result($result)) {
+    $phase_nodes[] = $nid;
+  }
+  return $phase_nodes;
+}
+
+/**
+ * Builds the view for the inquiry
+ * @todo Add a detailed inquiry view to be used in the whole system
+ */
+function pi_phase_view($node, $teaser = FALSE, $page = FALSE) {
+  // If $teaser is FALSE, the entire node is being displayed.
+  if (!$teaser) {
+    //Use Drupal's default node view.
+    $node = node_prepare($node, $teaser);
+
+    // render the phase activities using a theme function
+    $node->content['activities'] = array(
+        '#value' => theme('phase_activities', $node),
+        '#weight' => 2,
+    );
+    // Add more involved phase layout here
+  }
+
+  // If $teaser is true, node is being displayed as a teaser,
+  // in this case, just show the description and none of the rest of the inquiry stuff
+  if ($teaser) {
+    //Use Drupal's default node view.
+    $node = node_prepare($node, $teaser);
+  }
+  return $node;
+}
+
+/**
+ * Declare theme functions for pi_inquiry
+ */
+function pi_phase_theme() {
+  return array(
+      'phase_activities' => array(
+          'arguments' => array('node'),
+      ),
+  );
+}
+
+/**
+ * Theme function to display the inquiry description
+ * @param drupal node data $node Inquiry node details.
+ */
+function theme_phase_activities($node) {
+  $output = '<div class="phase-activities">';
+  $output .= "Phase activities";
+  $output .= '</div>';
+  return $output;
+}

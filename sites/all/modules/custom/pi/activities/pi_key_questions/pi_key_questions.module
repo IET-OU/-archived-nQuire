@@ -1,0 +1,127 @@
+<?php
+
+// $Id: pi_key_questions.module,v 1.2 2009/06/11 09:55:10 ou_mbg Exp $
+
+/**
+ * @file
+ * Module for creating "key questions" node type
+ */
+
+/**
+ * Implementation of hook_node_info().
+ */
+function pi_key_questions_node_info() {
+	return array(
+			'pi_key_questions' => array(
+					'name' => t('Inquiry add key question'), // Required.
+					'module' => 'pi_key_questions', // Required.
+					'description' => t('Key questions for an inquiry'), // Required.
+					'has_title' => TRUE,
+					'title_label' => t('Add key question'),
+					'has_body' => FALSE,
+					'locked' => TRUE,
+			)
+	);
+}
+
+
+
+
+/**
+ * Implementation of hook_access().
+ */
+function pi_key_questions_access($op, $node, $account) {
+	return pi_access_to_node($op, $node);
+}
+
+/**
+ * Implementation of hook_form().
+ */
+function pi_key_questions_form(&$node) {
+	$form['title'] = array(
+			'#type' => 'hidden',
+			'#value' => t('Key question')
+	);
+
+	$form['key_question'] = array(
+			'#type' => 'textarea',
+			'#required' => TRUE,
+			'#default_value' => $node->key_question,
+			'#description' => t('A key question is asked in order to test all or part of a hypothesis. Write your key question here.'),
+			'#resizable' => FALSE,
+			'#rows' => 4,
+			'#cols' => 40,
+			'#weight' => 0
+	);
+
+	return $form;
+}
+
+/**
+ * Implementation of hook_insert().
+ */
+function pi_key_questions_insert($node) {
+	db_query("INSERT INTO {pi_key_questions} (nid, vid, key_question) VALUES ('%d', '%d', '%s')", $node->nid, $node->vid, $node->key_question);
+}
+
+/**
+ * Implementation of hook_update().
+ */
+function pi_key_questions_update($node) {
+	if ($node->revision) {
+		pi_key_questions_insert($node);
+	} else {
+		db_query("UPDATE {pi_key_questions} SET key_question = '%s' WHERE vid = %d", $node->key_question, $node->vid);
+	}
+}
+
+function pi_key_questions_delete(&$node) {
+	//Delete the key question from the table and the sort table if it exists
+	db_query('DELETE FROM {pi_key_questions} WHERE nid = %d', $node->nid);
+	db_query('DELETE FROM {pi_sort_key_questions} WHERE key_question = %d', $node->nid);
+
+	$result = db_query('SELECT nid FROM {pi_key_answers} WHERE key_question_id = %d', $node->nid);
+
+	//Remove the answers to the question
+	while ($answer = db_fetch_object($result)) {
+		node_delete($answer->nid);
+	}
+}
+
+/**
+ * Implementation of hook_load().
+ */
+function pi_key_questions_load($node) {
+	return db_fetch_object(db_query('SELECT * FROM {pi_key_questions} WHERE vid = %d', $node->vid));
+}
+
+/**
+ * Implementation of hook_view().
+ */
+function pi_key_questions_view($node, $teaser = FALSE, $page = FALSE) {
+	$node = node_prepare($node, $teaser);
+	return $node;
+}
+
+/**
+ * hook_theme() for pi_key_questions
+ * @return array describing the provided themes as per drupal 6 api    
+ */
+function pi_key_questions_theme() {
+	return array(
+			'pi_key_questions' => array(
+					'arguments' => array('node', 'teaser'),
+			)
+	);
+}
+
+/**
+ * Theme function to show a key question
+ * @param object (node->pi_key_question )$node
+ * @return string HTML output
+ */
+function theme_pi_key_questions($node, $teaser) {
+	$output = '<strong>' . t('Key question:') . '</strong> ' . nl2br($node->key_question);
+	return $output;
+}
+

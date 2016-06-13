@@ -1,0 +1,258 @@
+<?php
+
+function pi_journal_contribution_node_info() {
+	return array(
+			'pi_journal_contribution' => array(
+					'name' => t('Pi journal contribution'), // Required.
+					'module' => 'pi_journal_contribution', // Required.
+					'description' => t('Pi journal contribution'), // Required.
+					'has_title' => TRUE,
+					'title_label' => t('Journal contribution'),
+					'has_body' => TRUE,
+					'locked' => TRUE
+			),
+	);
+}
+
+function pi_journal_contribution_form($node, $form_state) {
+	return array();
+}
+
+function pi_journal_contribution_access($op, $node, $account) {
+	return TRUE;
+	return $op === 'view';
+}
+
+function pi_journal_contribution_load($node) {
+	$query = "SELECT inquiry_id, shared, actor, collaboration FROM {pi_journal_contribution} WHERE nid=%d";
+	$data = db_fetch_object(db_query($query, $node->nid));
+	return $data;
+}
+
+function _pi_journal_contribution_save_data($node) {
+	$query = "INSERT INTO {pi_journal_contribution} (nid, inquiry_id, actor, collaboration, shared) VALUES (%d, %d, %d, '%s', %d) "
+					. "ON DUPLICATE KEY UPDATE inquiry_id=%d, actor=%d, collaboration='%s', shared=%d";
+	db_query($query, $node->nid, $node->inquiry_id, $node->actor, $node->collaboration, $node->shared, $node->inquiry_id, $node->actor, $node->collaboration, $node->shared);
+}
+
+function pi_journal_contribution_insert($node) {
+	_pi_journal_contribution_save_data($node);
+}
+
+function pi_journal_contribution_update($node) {
+	_pi_journal_contribution_save_data($node);
+}
+
+function pi_journal_contribution_delete(&$node) {
+	db_query('DELETE FROM {pi_journal_contribution} WHERE nid=%d', $node->nid);
+}
+
+function pi_journal_contributions_find_all_shared_contributions() {
+	$shared = array();
+
+	$query = "SELECT nid, inquiry_id, collaboration FROM {pi_journal_contribution} WHERE shared=1";
+	$result = db_query($query);
+	while ($row = db_fetch_array($result)) {
+		if (!isset($shared[$row['inquiry_id']])) {
+			$shared[$row['inquiry_id']] = array('collaboration' => pi_inquiry_groupings_get_coarser_collaboration_level($row['inquiry_id']), 'contributions' => array());
+		}
+
+		if ($row['collaboration'] === $shared[$row['inquiry_id']]['collaboration']) {
+			$shared[$row['inquiry_id']]['contributions'][] = node_load($row['nid']);
+		}
+	}
+	return $shared;
+}
+
+function pi_journal_contributions_find_shared_contributions_for_inquiry($inquiry_id) {
+	$shared = array();
+
+	$collaboration = pi_inquiry_groupings_get_coarser_collaboration_level($inquiry_id);
+
+	$shared[$inquiry_id] = array('collaboration' => $collaboration, 'contributions' => array());
+
+	$query = "SELECT nid FROM {pi_journal_contribution} WHERE inquiry_id=%d AND shared=1 AND collaboration='%s'";
+	$result = db_query($query, $inquiry_id, $collaboration);
+	while ($row = db_fetch_array($result)) {
+		$shared[$inquiry_id]['contributions'][] = node_load($row['nid']);
+	}
+
+	return $shared;
+}
+
+function pi_journal_contribution_theme() {
+	return array(
+			'pi_journal_contribution_display' => array(
+					'arguments' => array('node' => NULL),
+			),
+			'pi_journal_contribution_summary' => array(
+					'arguments' => array('node' => NULL),
+			),
+	);
+}
+
+function pi_journal_contribution_view($node) {
+	$node = node_prepare($node, FALSE);
+	$node->content['title'] = array(
+			'#value' => '',
+			'#weight' => 1,
+	);
+	$node->content['body'] = array(
+			'#value' => theme('pi_journal_contribution_summary', $node),
+			'#weight' => 2,
+	);
+	return $node;
+}
+
+function pi_journal_contribution_form_comment_form_alter(&$form, &$form_state) {
+	$node = node_load($form['nid']['#value']);
+	if ($node && $node->type === 'pi_journal_contribution') {
+		$form['revision_information']['#access'] = FALSE;
+
+		$path = "journal/contribution/{$node->nid}";
+		$form['#redirect'] = $form_state['redirect'] = $path;
+
+		nquire_commons_form_set_cancel_button_link($form, $path);
+	}
+}
+
+
+
+function theme_pi_journal_contribution_summary($node) {
+	drupal_add_css(drupal_get_path('module', 'pi_journal_contribution') . '/css/pi_journal_contribution.css');
+
+	$inquiry_node = node_load($node->inquiry_id);
+
+	$title = strlen($node->title) > 0 ? check_plain($node->title) : t('Investigation results');
+	$summary = check_markup($node->body);
+	$subtitle = t('Inquiry @inquiry', array('@inquiry' => $inquiry_node->title));
+
+	switch ($node->collaboration) {
+		case 'individual':
+			$u = user_load($node->actor);
+			$author = check_plain($u->name);
+			break;
+		case 'group':
+			$g = node_load($node->actor);
+			$author = check_markup(t("Group @group", array('@group' => $g->title)));
+			break;
+		default:
+			$author = FALSE;
+			break;
+	}
+
+
+	$content = '<div class="pi_journal_contribution_title_section">'
+					.'<div class="pi_journal_contribution_title">' . $title . '</div>';
+	$content .= '<div class="pi_journal_contribution_subtitle">' . $subtitle . '</div>';
+	if ($author) {
+		$content .= '<div class="pi_journal_contribution_author">' . $author . '</div>';
+	}
+
+	if ($summary) {
+		$content .= '<div class="pi_journal_contribution_abstract">' . t('Summary: ') . $summary . '</div>';
+	}
+	
+	$content .= '</div>';
+
+	return $content;
+}
+
+function theme_pi_journal_contribution_display($node) {
+	drupal_add_css(drupal_get_path('module', 'pi_journal_contribution') . '/css/pi_journal_contribution.css');
+
+
+	$content = theme('pi_journal_contribution_summary', $node);
+
+	$activities_data = _pi_journal_contribution_get_contributed_content($node);
+
+	$content .= '<div class="pi_journal_contribution_content">';
+	$content .= theme('pi_activities_view_contribution_content', $activities_data);
+	$content .= '</div>';
+
+	$output = '<table><tr>';
+
+	$output .= '<td style="vertical-align: top;">' . $content . '</td>';
+
+	$comments = '<div class="pi_journal_contribution_comments_block">' 
+					. '<div class="pi_journal_contribution_comments_header">' . t('Comments') . '</div>'
+					. '<p><small>' . l(t('Add Comment'), 'comment/reply/' . $node->nid, array('fragment' => 'comment-form')) . '</small></p>'
+					. comment_render($node)
+					. '</div>';
+	$output .= '<td style="vertical-align: top;">' . $comments . '</td>';
+
+	$output .= '</tr></table>';
+
+
+	return $output;
+}
+
+function pi_journal_contribution_find_contribution_node($inquiry_node, $uid) {
+	return node_load(pi_journal_contribution_find_contribution_nid($inquiry_node, $uid));
+}
+
+function pi_journal_contribution_find_contribution_nid($inquiry_node, $uid) {
+	$collaboration = pi_inquiry_groupings_get_coarser_collaboration_level($inquiry_node->nid);
+	$actor = pi_inquiry_groupings_get_actor_for($inquiry_node, $collaboration, $uid);
+	$query = "SELECT nid FROM {pi_journal_contribution} WHERE inquiry_id=%d AND actor=%d AND collaboration='%s'";
+	$row = db_fetch_array(db_query($query, $inquiry_node->nid, $actor, $collaboration));
+	return $row ? $row['nid'] : FALSE;
+}
+
+function pi_journal_contribution_is_shared_for_user($inquiry_node, $uid) {
+	$collaboration = pi_inquiry_groupings_get_coarser_collaboration_level($inquiry_node->nid);
+	$actor = pi_inquiry_groupings_get_actor_for($inquiry_node, $collaboration, $uid);
+
+	$shared_query = "SELECT shared FROM {pi_journal_contribution} WHERE inquiry_id=%d AND actor=%d AND collaboration='%s'";
+	$row = db_fetch_array(db_query($shared_query, $inquiry_node->nid, $actor, $collaboration));
+	return $row ? $row['shared'] : FALSE;
+}
+
+function _pi_journal_contribution_get_contributed_content($contribution_node) {
+	$inquiry_info = pi_info()->getInquiryInfo($contribution_node->inquiry_id);
+	$inquiry_content = pi_info()->getContentManager();
+
+	$exclude_types = array('pi_explore_tool', 'pi_read_information');
+
+	$activities = array();
+
+	foreach ($inquiry_info->getPhases() as $phase_node) {
+		$phase_key = $inquiry_info->getPhaseKey($phase_node->nid);
+
+		foreach ($inquiry_info->getActivitiesForPhase($phase_node->nid) as $activity_nid => $activity_node) {
+			if (!in_array($activity_node->activity_type, $exclude_types)) {
+				$content_nids = $inquiry_content->getContributionContent($contribution_node, $activity_nid);
+				$activities[] = _pi_journal_contribution_view_get_activity_data($phase_key, $activity_node, $content_nids);
+			}
+		}
+	}
+
+	return $activities;
+}
+
+function _pi_journal_contribution_view_get_activity_data($phase_key, $activity_node, $content_nids) {
+	$data = array(
+			'node' => $activity_node,
+			'title' => check_plain($activity_node->title),
+			'description' => nl2br(check_plain($activity_node->body)),
+			'phase_key' => $phase_key,
+			'nodes' => array(),
+	);
+
+	$options = array(
+			'edit' => FALSE,
+			'child_activity_edit' => FALSE,
+			'child_activity_delete' => FALSE,
+			'editable' => FALSE,
+			'activity_node' => $activity_node,
+			'separate_page' => FALSE,
+	);
+
+	$view_f = "{$activity_node->activity_type}_display_content_in_activity";
+	foreach ($content_nids as $content_nid) {
+		$content_node = node_load($content_nid);
+		$data['nodes'][] = $view_f($content_node, $options);
+	}
+
+	return $data;
+}

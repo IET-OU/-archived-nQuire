@@ -176,7 +176,7 @@ function drupal_final_markup($content) {
  * Add a feed URL for the current page.
  *
  * @param $url
- *   A url for the feed.
+ *   A URL for the feed.
  * @param $title
  *   The title of the feed.
  */
@@ -296,14 +296,16 @@ function drupal_get_destination() {
  * statement in your menu callback.
  *
  * @param $path
- *   A Drupal path or a full URL.
+ *   (optional) A Drupal path or a full URL, which will be passed to url() to
+ *   compute the redirect for the URL.
  * @param $query
- *   A URL-encoded query string to append to the link, or an array of query
- *   key/value-pairs without any URL-encoding. Passed to url().
+ *   (optional) A URL-encoded query string to append to the link, or an array of
+ *   query key/value-pairs without any URL-encoding. Passed to url().
  * @param $fragment
- *   A destination fragment identifier (named anchor).
+ *   (optional) A destination fragment identifier (named anchor).
  * @param $http_response_code
- *   Valid values for an actual "goto" as per RFC 2616 section 10.3 are:
+ *   (optional) The HTTP status code to use for the redirection, defaults to
+ *   302. Valid values for an actual "goto" as per RFC 2616 section 10.3 are:
  *   - 301 Moved Permanently (the recommended value for most redirects)
  *   - 302 Found (default in Drupal and PHP, sometimes used for spamming search
  *         engines)
@@ -453,6 +455,8 @@ function drupal_access_denied() {
 function drupal_http_request($url, $headers = array(), $method = 'GET', $data = NULL, $retry = 3, $timeout = 30.0) {
   global $db_prefix;
 
+  $proxy_not_required = TRUE;
+
   $result = new stdClass();
 
   // Parse the URL and make sure we can handle the schema.
@@ -477,7 +481,14 @@ function drupal_http_request($url, $headers = array(), $method = 'GET', $data = 
     case 'feed':
       $port = isset($uri['port']) ? $uri['port'] : 80;
       $host = $uri['host'] . ($port != 80 ? ':'. $port : '');
-      $fp = @fsockopen($uri['host'], $port, $errno, $errstr, $timeout);
+      $proxy_not_required = is_in_no_proxy_list($uri['host']);
+      if ((variable_get('proxy_server', '') != '') && (FALSE == $proxy_not_required)) {
+        $proxy_server = variable_get('proxy_server', '');
+        $proxy_port = variable_get('proxy_port', 8080);
+        $fp = @fsockopen($proxy_server, $proxy_port, $errno, $errstr, $timeout);
+      } else {
+        $fp = @fsockopen($uri['host'], $port, $errno, $errstr, $timeout);
+      }
       break;
     case 'https':
       // Note: Only works for PHP 4.3 compiled with OpenSSL.
@@ -508,9 +519,13 @@ function drupal_http_request($url, $headers = array(), $method = 'GET', $data = 
   }
 
   // Construct the path to act on.
-  $path = isset($uri['path']) ? $uri['path'] : '/';
-  if (isset($uri['query'])) {
-    $path .= '?'. $uri['query'];
+  if ((variable_get('proxy_server', '') != '') && (FALSE == $proxy_not_required)) {
+    $path = $url;
+  } else {
+    $path = isset($uri['path']) ? $uri['path'] : '/';
+    if (isset($uri['query'])) {
+      $path .= '?'. $uri['query'];
+    }
   }
 
   // Create HTTP request.
@@ -522,6 +537,13 @@ function drupal_http_request($url, $headers = array(), $method = 'GET', $data = 
     'User-Agent' => 'User-Agent: Drupal (+http://drupal.org/)',
   );
 
+  if ((variable_get('proxy_username', '') != '') && (FALSE == $proxy_not_required)) {
+    $username = variable_get('proxy_username', '');
+    $password = variable_get('proxy_password', '');
+    $auth_string = base64_encode($username . ($password != '' ? ':'. $password : ''));
+    $defaults['Proxy-Authorization'] = 'Proxy-Authorization: Basic '. $auth_string ."\r\n";
+  }
+
   // Only add Content-Length if we actually have any content or if it is a POST
   // or PUT request. Some non-standard servers get confused by Content-Length in
   // at least HEAD/GET requests, and Squid always requires Content-Length in
@@ -531,7 +553,7 @@ function drupal_http_request($url, $headers = array(), $method = 'GET', $data = 
     $defaults['Content-Length'] = 'Content-Length: '. $content_length;
   }
 
-  // If the server url has a user then attempt to use basic authentication
+  // If the server URL has a user then attempt to use basic authentication
   if (isset($uri['user'])) {
     $defaults['Authorization'] = 'Authorization: Basic '. base64_encode($uri['user'] . (!empty($uri['pass']) ? ":". $uri['pass'] : ''));
   }
@@ -644,6 +666,22 @@ function drupal_http_request($url, $headers = array(), $method = 'GET', $data = 
 
   $result->code = $code;
   return $result;
+}
+
+function is_in_no_proxy_list($host) {
+  $rv = FALSE;
+  $proxy_exceptions = variable_get('proxy_exceptions', '');
+  if (FALSE == empty($proxy_exceptions)) {
+    $patterns = explode(",",$proxy_exceptions);
+    foreach ($patterns as $pattern) {
+      $pattern = trim($pattern, " ");
+      if (strstr($host,$pattern)) {
+        $rv = TRUE;
+        break;
+      }
+    }
+  }
+  return $rv;
 }
 /**
  * @} End of "HTTP handling".
@@ -1423,8 +1461,9 @@ function format_date($timestamp, $type = 'medium', $format = '', $timezone = NUL
  * alternative than url().
  *
  * @param $path
- *   The internal path or external URL being linked to, such as "node/34" or
- *   "http://example.com/foo". A few notes:
+ *   (optional) The internal path or external URL being linked to, such as
+ *   "node/34" or "http://example.com/foo". The default value is equivalent to
+ *   passing in '<front>'. A few notes:
  *   - If you provide a full URL, it will be considered an external URL.
  *   - If you provide only the path (e.g. "node/34"), it will be
  *     considered an internal link. In this case, it should be a system URL,
@@ -1440,7 +1479,8 @@ function format_date($timestamp, $type = 'medium', $format = '', $timezone = NUL
  *     include them in $path, or use $options['query'] to let this function
  *     URL encode them.
  * @param $options
- *   An associative array of additional options, with the following elements:
+ *   (optional) An associative array of additional options, with the following
+ *   elements:
  *   - 'query': A URL-encoded query string to append to the link, or an array of
  *     query key/value-pairs without any URL-encoding.
  *   - 'fragment': A fragment identifier (named anchor) to append to the URL.
@@ -1591,6 +1631,14 @@ function drupal_attributes($attributes = array()) {
  * attribute to links that point to the current page (for theming), so all
  * internal links output by modules should be generated by this function if
  * possible.
+ *
+ * However, for links enclosed in translatable text you should use t() and
+ * embed the HTML anchor tag directly in the translated string. For example:
+ * @code
+ * t('Visit the <a href="@url">settings</a> page', array('@url' => url('admin')));
+ * @endcode
+ * This keeps the context of the link title ('settings' in the example) for
+ * translators.
  *
  * @param $text
  *   The link text for the anchor tag.
@@ -3825,7 +3873,7 @@ function drupal_flush_all_caches() {
  * Changes the character added to all css/js files as dummy query-string,
  * so that all browsers are forced to reload fresh files. We keep
  * 20 characters history (FIFO) to avoid repeats, but only the first
- * (newest) character is actually used on urls, to keep them short.
+ * (newest) character is actually used on URLs, to keep them short.
  * This is also called from update.php.
  */
 function _drupal_flush_css_js() {

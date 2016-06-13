@@ -1,0 +1,21 @@
+<?php
+
+
+/**
+ * Implementation of hook_install(): registers the supported activities with 
+ * the authoring tool.
+ */
+function nutritional_information_measure_designer_install() {
+  inquiry_available_features_register('activity', 'pi_nutritional_analysis', 'nutritional_information_measure_designer');
+  
+  inquiry_available_features_register('measure', '_nutritionalinformation', 'nutritional_information_measure_designer');
+}
+
+/**
+ * Implementation of hook_uninstall(): removes the registered activities.
+ */
+function nutritional_information_measure_designer_uninstall() {
+  inquiry_available_features_forget('measure', '_nutritionalinformation');
+  inquiry_available_features_forget('activity', 'pi_nutritional_analysis');
+}
+

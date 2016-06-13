@@ -1,0 +1,166 @@
+<?php
+
+// $Id: pi_explore_tool.module,v 1.2 2009/06/11 09:55:10 ou_mbg Exp $
+
+/**
+ * @file
+ * Module for creating "pi_explore_tool" node type
+ */
+
+/**
+ * Implementation of hook_node_info().
+ */
+function pi_explore_tool_node_info() {
+
+  return array(
+      'pi_explore_tool' => array(
+          'name' => t('Inquiry explore tool'), // Required.
+          'module' => 'pi_explore_tool', // Required.
+          'description' => t('Explore a scientific instrument'), // Required.
+          'has_title' => TRUE,
+          'title_label' => t('Explore tool'),
+          'has_body' => TRUE,
+          'body_label' => t('Explore tool'),
+          'locked' => TRUE)
+  );
+}
+
+/**
+ * Implementation of hook_perm().
+ */
+function pi_explore_tool_perm() {
+  
+}
+
+/**
+ * Implementation of hook_access().
+ */
+function pi_explore_tool_access($op, $node, $account) {
+  return FALSE;
+}
+
+/**
+ * Implementation of hook_form().
+ */
+function pi_explore_tool_form(&$node) {
+
+  // Get metadata for this node type
+  // (we use it for labeling title and body fields).
+  // We defined this in pi_explore_tool_node_info().
+  $type = node_get_types('type', $node);
+
+  $node_details = get_inquiry_details_from_current_path();
+  if (is_numeric($node_details->activity_id)) {
+    $current_activity = node_load($node_details->activity_id);
+  }
+
+  if ($current_activity->name) {
+    drupal_set_title(t($current_activity->name));
+  }
+
+  $form['title'] = array(
+      '#type' => 'textfield',
+      '#title' => check_plain($type->title_label),
+      '#required' => FALSE,
+      '#default_value' => $type->title_label,
+      '#weight' => -5
+  );
+
+  $form['body_filter']['body'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Body'),
+      '#required' => TRUE,
+      '#default_value' => $node->body,
+      '#description' => t('Body'),
+      '#resizable' => TRUE,
+      '#rows' => 8,
+      '#cols' => 40,
+      '#weight' => -2
+  );
+
+  $form['body_filter']['data'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Data'),
+      '#required' => TRUE,
+      '#default_value' => $node->data,
+      '#description' => t('Data'),
+      '#resizable' => TRUE,
+      '#rows' => 8,
+      '#cols' => 40,
+      '#weight' => -2
+  );
+
+  return $form;
+}
+
+/**
+ * Implementation of hook_view().
+ */
+function pi_explore_tool_view($node, $teaser = FALSE, $page = FALSE) {
+
+  $node->content['body'] = array(
+      '#value' => theme('pi_explore_tool', $node, $teaser),
+      '#weight' => 2
+  );
+
+  return $node;
+}
+
+/**
+ * MISSING
+ * 
+ * @return multitype:multitype:multitype:string   
+ */
+function pi_explore_tool_theme() {
+  return array(
+      'pi_explore_tool' => array(
+          'arguments' => array('node', 'teaser'),
+      ),
+  );
+}
+
+/**
+ * MISSING
+ * 
+ * @param unknown_type $node
+ * @return string
+ */
+function theme_pi_explore_tool($node, $teaser) {
+  if ($teaser) {
+    return '';
+  } else {
+    $data = nquire_commons_decode_data($node->data);
+    if (isset($data['tool'])) {
+      $page = pi_data_tools_plugin_format_explore_page($data['tool']);
+      return $page;
+    } else {
+      return "no tool!";
+    }
+  }
+}
+
+function pi_explore_tool_insert($node) {
+  db_query("INSERT INTO {pi_explore_tool} (nid, vid, data) VALUES ('%d', '%d', '%s')", $node->nid, $node->vid, $node->data);
+}
+
+/**
+ * Implementation of hook_update().
+ */
+function pi_explore_tool_update($node) {
+  if ($node->revision) {
+    pi_explore_tool_insert($node);
+  } else {
+    db_query("UPDATE {pi_explore_tool} SET data = '%s' WHERE vid = %d", $node->data, $node->vid);
+  }
+}
+
+function pi_explore_tool_delete(&$node) {
+  db_query('DELETE FROM {pi_explore_tool} WHERE nid = %d', $node->nid);
+}
+
+/**
+ * Implementation of hook_load().
+ */
+function pi_explore_tool_load($node) {
+  return db_fetch_object(db_query('SELECT * FROM {pi_explore_tool} WHERE vid = %d', $node->vid));
+}

@@ -1,0 +1,10 @@
+; $Id: pi_sort_measures.info 2010/06/05 mcp Exp $
+name = nQuire methodology
+project = nquire
+description = nQuire decide methodology 
+package = nQuire Activities - optional
+dependencies[] = pi
+dependencies[] = pi_available_measures
+dependencies[] = pi_sort_data
+core = 6.x
+version = "6.x-13.02-dev"

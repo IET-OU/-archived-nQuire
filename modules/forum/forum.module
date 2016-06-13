@@ -216,8 +216,10 @@ function forum_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
     case 'prepare':
       if (empty($node->nid)) {
         // New topic
-        $node->taxonomy[arg(3)]->vid = $vid;
-        $node->taxonomy[arg(3)]->tid = arg(3);
+        /* FIX evilfer https://drupal.org/node/1775366 */
+        //$node->taxonomy[arg(3)]->vid = $vid;
+        //$node->taxonomy[arg(3)]->tid = arg(3);
+        $node->taxonomy[arg(3)] = (object) array('vid' => $vid, 'tid' => arg(3));
       }
       break;
 
@@ -690,7 +692,7 @@ function template_preprocess_forums(&$variables) {
       // Check if the current user has the 'create' permission for this node type.
       if (node_access('create', $type)) {
         // Fetch the "General" name of the content type;
-        // Push the link with title and url to the array.
+        // Push the link with title and URL to the array.
         $forum_types[$type] = array('title' => t('Post new @node_type', array('@node_type' => node_get_types('name', $type))), 'href' => 'node/add/'. str_replace('_', '-', $type) .'/'. $variables['tid']);
       }
     }

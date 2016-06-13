@@ -1,0 +1,180 @@
+<?php
+
+// $Id: ag.module,v 1.2 2009/06/24 09:17:48 ou_pm Exp $
+
+
+function pi_top_links_block($op = 'list') {
+  switch ($op) {
+    case 'list':
+
+      $blocks = array(
+          array('info' => t('Inquiry top links')),
+      );
+
+      return $blocks;
+
+    case 'view':
+      drupal_add_css(drupal_get_path('module', 'pi_top_links') . '/css/pi_top_links.css');
+
+      $links = _pi_top_links_format_menu() . _pi_top_links_format_user_block();
+
+      if (arg(0) === 'home') {
+        $content = '<div class="pi-top-links-fixed-container"><div class="pi-top-links-fixed-container-inner">' . $links . '</div></div>';
+      } else {
+        $content = '<div class="pi-top-links-flex-container">' . $links . '</div>';
+      }
+
+      return array(
+          'content' => $content,
+      );
+  }
+}
+
+function _pi_top_links_format_menu() {
+  global $user;
+
+  $paths = array();
+
+  $paths['home'] = array(
+      'checkaccess' => FALSE,
+      'title' => t('Home'),
+  );
+
+  if ($user->uid) {
+    $paths['inquiries'] = array(
+        'checkaccess' => FALSE,
+        'title' => t('My inquiries'),
+        'children' => array(
+            'inquiries' => t('Joined inquiries'),
+            'availableinquiries' => t('Available inquiries'),
+        ),
+    );
+  } else {
+    $paths['availableinquiries'] = array(
+        'checkaccess' => FALSE,
+        'title' => t('Available inquiries'),
+    );
+  }
+
+  $paths['creator'] = array(
+      'checkaccess' => TRUE,
+      'title' => t('Inquiry creator'),
+      'children' => array(
+          'creator' => t('Browse my inquiries'),
+          'creator/new' => t('Create new inquiry'),
+          'creator/copy' => t('Copy existing inquiry'),
+      ),
+  );
+  $help_story = pi_promote_get_story('help_authoring_tool');
+  if ($help_story) {
+    $paths['creator']['children']["node/$help_story"] = t('Creator tutorial');
+  }
+
+
+  $paths['journal'] = array(
+      'checkaccess' => FALSE,
+      'title' => t('Inquiry results'),
+  );
+  $paths['forum'] = array(
+      'checkaccess' => FALSE,
+      'title' => t('Forums'),
+      'children' => array(),
+  );
+
+
+  if (function_exists('pi_promote_get_menu_items')) {
+    $paths = array_merge($paths, pi_promote_get_menu_items());
+  }
+
+  $paths['admin/nquire'] = array(
+      'checkaccess' => TRUE,
+      'title' => t('Configure nQuire'),
+      'children' => array(
+          'admin/nquire/promote' => t('Promote inquiries'),
+          'admin/nquire/news' => t('Select news'),
+      ),
+  );
+
+
+
+  $depths = array('', '&nbsp;&nbsp;&#149;&nbsp;', '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- ');
+
+  foreach (forum_get_forums() as $tid => $forum) {
+    $paths['forum']['children']['forum/' . $tid] = $depths[min($forum->depth, 2)] . check_plain($forum->name);
+  }
+
+  $items = array();
+  foreach ($paths as $path => $data) {
+    $item = _pi_top_links_format_menu_item($path, $data);
+    if ($item) {
+      $items[] = $item;
+    }
+  }
+
+  $output = implode('<div class="pi-top-links-separator"></div>', $items);
+
+  return $output;
+}
+
+function _pi_top_links_format_menu_item($path, $data) {
+  if ($data['checkaccess']) {
+    $item = menu_get_item($path);
+    if (!$item || !$item['access']) {
+      return FALSE;
+    }
+  }
+
+  $label = $data['title'];
+  if ($data['children']) {
+    $label .= '<div class="pi-top-links-item-down"></div>';
+  }
+
+  $output = '<div class="pi-top-links-item">' . l($label, $path, array('html' => TRUE));
+
+  if ($data['children']) {
+    $output .= '<div class="pi-top-links-children">';
+    foreach ($data['children'] as $cpath => $label) {
+      $output .= '<div class="pi-top-links-child">' . l($label, $cpath, array('html' => TRUE)) . '</div>';
+    }
+    $output .= '</div>';
+  }
+  $output .= '</div>';
+  return $output;
+}
+
+function _pi_top_links_format_user_block() {
+  global $user;
+
+  if ($user->uid) {
+    $user_menu_main_path = "user/{$user->uid}";
+
+    $user_menu_item_data = array(
+        'checkaccess' => FALSE,
+        'title' => check_plain($user->name),
+        'children' => array(
+            "profile/{$user->uid}/events" => t('Updates'),
+            "user/{$user->uid}/edit" => t('Edit profile'),
+        ),
+    );
+            
+
+    $l1 = _pi_top_links_format_menu_item($user_menu_main_path, $user_menu_item_data);
+
+    $l2 = l(t('logout'), "logout", array('attributes' => array('class' => 'pi-top-links-user-action')));
+  } else {
+    $l1 = l(t('login'), "user", array(
+        'attributes' => array('class' => 'pi-top-links-user-action'),
+        'query' => drupal_get_destination(),
+    ));
+    $l2 = l(t(/* create new account */'new user'), "user/register", array(
+        'attributes' => array('class' => 'pi-top-links-user-action'),
+        'query' => drupal_get_destination(),
+    ));
+  }
+
+  $output = '<div class="pi-top-links-user-block">'
+          . $l1 . '<div class="pi-top-links-separator"></div>' . $l2
+          . '</div>';
+
+  return $output;
+}

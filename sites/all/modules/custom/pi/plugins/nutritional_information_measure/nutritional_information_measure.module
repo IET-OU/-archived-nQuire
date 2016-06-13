@@ -1,0 +1,130 @@
+<?php
+
+function nutritional_information_measure_theme() {
+  return array(
+      'nutritional_information_measure_form_item' => array(
+          'arguments' => array('form' => NULL),
+      ),
+  );
+}
+
+function theme_nutritional_information_measure_form_item($form) {
+  $keys = nutritional_information_measure_get_food_keys();
+
+  nquire_commons_load_nquire_dynamic_measure_support();
+  nquire_commons_load_nquire_tooltip_support();
+
+  drupal_add_js(drupal_get_path('module', 'nutritional_information_measure') . '/js/NutritionalInformationMeasureData.js');
+  drupal_add_js(drupal_get_path('module', 'nutritional_information_measure') . '/js/NutritionalInformationMeasure.js');
+
+  $headers = array(t('Food'));
+  foreach ($keys as $component) {
+    $headers[] = $component;
+  }
+
+  $header = implode('', array_map(function($x) {
+                    return "<th>$x</th>";
+                  }, $headers));
+
+  $table = '<table class="food_table">'
+          . '<thead><tr>' . $header . '</tr></thead>'
+          . '<tbody></tbody>'
+          . '</table>';
+
+  $output = '<div id="' . $form['#widget_id'] . '" measure_type="measure_widget__nutritionalinformation" input_element_id="' . $form['#widget_input_id'] . '">'
+          . '<div>'
+          . nquire_commons_create_not_expanding_table_block($table)
+          . '<a class="add_food" href="#">' . t('Add food') . '</a>'
+          . '</div></div>';
+
+  return $output;
+}
+
+function nutritional_information_measure_get_food_keys() {
+  static $keys = NULL;
+  if (!$keys) {
+    include_once 'nutritional_information_measure.data.inc';
+    $keys = _nutritional_information_measure_data_keys();
+  }
+  return $keys;
+}
+
+function nutritional_information_measure_get_food_data() {
+  include_once 'nutritional_information_measure.data.inc';
+  return _nutritional_information_measure_food_data();
+}
+
+function nutritional_information_measure_pi_measure__nutritionalinformation_create_form_item($measure_node, &$form, $value) {
+  $input_element_id = "measure_{$measure_node->nid}";
+  $widget_element_id = "{$input_element_id}_widget";
+
+  $form[$input_element_id] = array(
+      '#type' => 'hidden',
+      '#title' => check_plain($measure_node->title),
+      '#description' => check_plain($measure_node->body),
+      '#default_value' => $value,
+      '#required' => FALSE,
+  );
+
+  $form[$widget_element_id] = array(
+      '#theme' => 'nutritional_information_measure_form_item',
+      '#widget_id' => $widget_element_id,
+      '#widget_input_id' => $input_element_id,
+  );
+}
+
+function nutritional_information_measure_pi_measure__nutritionalinformation_format_table_value($measure_node, $value) {
+  $food_data = nutritional_information_measure_get_food_data();
+  $data = nquire_commons_decode_data($value);
+
+  $foods = array();
+  foreach ($data as $key => $count) {
+    if ($count > 0) {
+      $text = $food_data[$key]['title'];
+      if ($count > 1) {
+        $text .= ' (x ' . check_plain($count) . ')';
+      }
+      if ($text) {
+        $foods[] = $text;
+      }
+    }
+  }
+
+  return implode('<br/>', $foods);
+}
+
+function nutritional_information_measure_pi_measure__nutritionalinformation_submeasure_get_title($measure_node, $key) {
+  $keys = nutritional_information_measure_get_food_keys();
+  return check_plain($measure_node->title) . t(':  !variable', array('!variable' => $keys[$key]));
+}
+
+function nutritional_information_measure_pi_measure__nutritionalinformation_get_submeasure_keys($measure_node) {
+  $keys = nutritional_information_measure_get_food_keys();
+  $result = array();
+  foreach ($keys as $i => $variable) {
+    $result[] = "{$measure_node->nid}:{$i}";
+  }
+  return $result;
+}
+
+function nutritional_information_measure_pi_measure__nutritionalinformation_submeasure_get_title_for_chart($measure_node, $key) {
+  $keys = nutritional_information_measure_get_food_keys();
+  return $keys[$key];
+}
+
+function nutritional_information_measure_pi_measure__nutritionalinformation_submeasure_is_numeric() {
+  return TRUE;
+}
+
+function nutritional_information_measure_pi_measure__nutritionalinformation_submeasure_get_value_for_chart($measure_node, $key, &$value) {
+  $food_data = nutritional_information_measure_get_food_data();
+  $data = nquire_commons_decode_data($value);
+
+  $amount = 0;
+  foreach ($data as $food_key => $count) {
+    $amount += $count * $food_data[$food_key]['value'][$key];
+  }
+
+  $value = $amount;
+}
+

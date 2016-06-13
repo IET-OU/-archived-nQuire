@@ -1,0 +1,177 @@
+<?php
+
+function vm_designer_nquire_creator_tool_vm_form($tool_type, $tool_data, &$form, $form_state) {
+  $set = nquire_commons_form_data_default_value($tool_data, 'vm_set', $form_state, 'vm_set', 'moonrock');
+  $mode = nquire_commons_form_data_default_value($tool_data, 'vm_mode', $form_state, 'vm_mode', 'search');
+  $selected = nquire_commons_form_data_default_value($tool_data, 'vm_selected', $form_state, 'vm_selected', array());
+
+  $form['vm'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Virtual Microscope'),
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE,
+  );
+
+  $form['vm']['vm_set'] = array(
+      '#type' => 'select',
+      '#options' => array(
+          'moonrock' => 'Moon Rock samples',
+      ),
+      '#required' => FALSE,
+      '#title' => t('Virtual Microscope sample set'),
+      '#description' => t('Select the collection of samples that will be used in this activity.'),
+      '#default_value' => $set,
+      '#ahah' => array(
+          'path' => ahah_helper_path(array('data', 'tool_form', 'vm', 'vm_selected')),
+          'wrapper' => 'vm-selected-samples',
+          'method' => 'replace',
+          'effect' => 'fade',
+      ),
+  );
+
+  $form['vm']['vm_mode'] = array(
+      '#type' => 'radios',
+      '#title' => t('What samples will be available?'),
+      '#description' => t('Select whether the participants will see a selected number of samples and/or will be able to search the whole sample collection.'),
+      '#default_value' => $mode,
+      '#options' => array(
+          //'search' => t('Only search'),
+          'list' => t('Only selected samples'),
+      //'both' => t('Search and selected samples'),
+      ),
+      '#required' => FALSE,
+      '#ahah' => array(
+          'path' => ahah_helper_path(array('data', 'tool_form', 'vm', 'vm_selected')),
+          'wrapper' => 'vm-selected-samples',
+          'method' => 'replace',
+          'effect' => 'fade',
+      ),
+  );
+
+  $form['vm']['vm_selected_prefix'] = array(
+      '#value' => '<div id="vm-selected-samples">',
+  );
+
+  if ($mode !== 'search') {
+    switch ($set) {
+      case 'moonrock':
+        $samples = array(
+            'sm186' => 'Sample SM 186',
+        );
+        break;
+    }
+    $form['vm']['vm_selected'] = array(
+        '#type' => 'checkboxes',
+        '#title' => t('Selected samples'),
+        '#description' => t('Here you can select a number of samples that will be highlighted by nQuire.') . '<br/>'
+        . t('Participants will see the samples listed here without need to make any search.'),
+        '#options' => $samples,
+        '#default_value' => $selected,
+        '#required' => FALSE,
+    );
+  } else {
+    $form['vm']['vm_selected'] = array();
+  }
+  $form['vm']['vm_selected_suffix'] = array(
+      '#value' => '</div>',
+  );
+}
+
+function vm_designer_nquire_creator_tool_vm_form_process($tool_type, &$tool_data, $form_values) {
+  $tool_data['vm_set'] = $form_values['vm_set'];
+  $tool_data['vm_mode'] = $form_values['vm_mode'];
+  $tool_data['vm_selected'] = array_filter($form_values['vm_selected']);
+  return;
+}
+
+function vm_designer_nquire_creator_tool_vm_name() {
+  return t('Virtual Microscope');
+}
+
+function vm_designer_nquire_creator_tool_vm_mandatory_measures($tool_type, $tool_data) {
+  return array(
+      'vm_snapshot' => array(
+          'title' => t('Snapshot'),
+          'description' => t('The sample and microscope position where the data was taken.'),
+          'type' => 'vm_snapshot',
+          'data' => '',
+      ),
+  );
+}
+
+/* * *******************
+ * vm_snapshot measure *
+ * ******************* */
+
+function vm_designer_nquire_creator_measure_vm_snapshot_name() {
+  return t('VM sample view');
+}
+
+function vm_designer_nquire_creator_measure_vm_snapshot_prevent_creation() {
+  return TRUE;
+}
+
+/* * *******************
+ * vm_length measure *
+ * ****************** */
+
+function vm_designer_nquire_creator_measure_vm_length_name() {
+  return t('VM length measure tool');
+}
+
+function vm_designer_nquire_creator_measure_vm_length_description() {
+  return t('This measure will allow the participants to measure lengths (in millimetres) on the Virtual Microscope samples. It is useful to record for instance the size of features seen under the microscope, distances, etc.');
+}
+
+function vm_designer_nquire_creator_measure_vm_length_required_tool() {
+  return 'vm';
+}
+
+/* * *******************
+ * vm_angle measures *
+ * ****************** */
+
+function vm_designer_nquire_creator_measure_vm_angle_name() {
+  return t('VM angle measure tool');
+}
+
+function vm_designer_nquire_creator_measure_vm_angle_description() {
+  return t('This measure will allow the participants to measure angles (in degrees) on the Virtual Microscope samples. ');
+}
+
+function vm_designer_nquire_creator_measure_vm_angle_required_tool() {
+  return 'vm';
+}
+
+/* * *******************
+ * vm_annotation measure *
+ * ****************** */
+
+function vm_designer_nquire_creator_measure_vm_annotation_name() {
+  return t('VM annotations tool');
+}
+
+function vm_designer_nquire_creator_measure_vm_annotation_description() {
+  return t('This tool will let participants to make annotations and draw on top of the microscope views from which data is recorded.');
+}
+
+function vm_designer_nquire_creator_measure_vm_annotation_required_tool() {
+  return 'vm';
+}
+
+/* * *******************
+ * vm_color measure *
+ * ****************** */
+
+function vm_designer_nquire_creator_measure_vm_color_name() {
+  return t('VM Rock colour chart');
+}
+
+function vm_designer_nquire_creator_measure_vm_color_description() {
+  return t('This measure will allow participants to record colours identified in a sample. This colour chart is used mostly in Geology in field trips.');
+}
+
+function vm_designer_nquire_creator_measure_vm_color_required_tool() {
+  return 'vm';
+}
+

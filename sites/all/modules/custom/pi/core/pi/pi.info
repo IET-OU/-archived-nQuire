@@ -1,0 +1,19 @@
+; $Id: pi.info, v 0.1 2009/05/10 09:00:00 tdc5 $
+name = nQuire core
+project = nquire
+description = nQuire Personal Inquiry system module.
+package = nQuire Core - required
+dependencies[] = og 
+dependencies[] = og_actions 
+dependencies[] = og_access 
+dependencies[] = og_views 
+dependencies[] = schema
+dependencies[] = loginmod
+dependencies[] = pi_activity
+dependencies[] = pi_breadcrumb
+dependencies[] = pi_header
+dependencies[] = pi_inquiry
+dependencies[] = pi_phase
+dependencies[] = pi_stage
+core = 6.x
+version = "6.x-10.08-dev"

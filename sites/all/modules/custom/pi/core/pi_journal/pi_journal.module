@@ -1,0 +1,218 @@
+<?php
+
+function pi_journal_menu() {
+
+	$items = array();
+
+	$items['journal'] = array(
+			'title' => 'Inquiry results',
+			'page callback' => 'pi_journal_home',
+			'type' => MENU_CALLBACK,
+			'access callback' => 'pi_journal_page_access',
+	);
+
+	$items['journal/inquiry/%'] = array(
+			'title' => 'Inquiry results',
+			'page callback' => 'pi_journal_inquiry_page',
+			'page arguments' => array(2),
+			'type' => MENU_CALLBACK,
+			'access callback' => 'pi_journal_page_access',
+	);
+
+	$items['journal/contribution/%'] = array(
+			'title' => 'Inquiry results',
+			'page callback' => 'pi_journal_contribution_page',
+			'page arguments' => array(2),
+			'type' => MENU_CALLBACK,
+			'access callback' => 'pi_journal_page_access',
+	);
+
+
+	return $items;
+}
+
+function pi_journal_page_access() {
+	return TRUE;
+}
+
+function pi_journal_home() {
+	return theme('pi_journal_list', pi_journal_contributions_find_all_shared_contributions(), TRUE);
+}
+
+function pi_journal_inquiry_page($inquiry_id) {
+	return theme('pi_journal_list', pi_journal_contributions_find_shared_contributions_for_inquiry($inquiry_id), FALSE);
+}
+
+function pi_journal_contribution_page($node_id) {
+	$node = node_load($node_id);
+	if ($node->type === 'pi_journal_contribution' && $node->shared) {
+		$output = theme('pi_journal_contribution_display', $node);
+    node_tag_new($node->nid);
+    return $output;
+	}
+}
+
+function pi_journal_theme() {
+	return array(
+			'pi_journal_list' => array(
+					'arguments' => array('items' => NULL, 'inquiry_page_links' => FALSE),
+			),
+			'pi_journal_results' => array(
+					'arguments' => array('item' => NULL),
+			),
+			'pi_journal_share_information' => array(
+					'arguments' => array('inquiry_node' => NULL),
+			),
+	);
+}
+
+function pi_journal_edit_share_access($inquiry_node) {
+	global $user;
+	switch (pi_inquiry_groupings_get_coarser_collaboration_level($inquiry_node->nid)) {
+		case 'individual':
+			return nquire_group_get_user_status_in_group($inquiry_node->actor_gid, $user->uid) === 'member';
+		case 'group':
+			$subgroup = node_load(pi_inquiry_groupings_get_user_subgroup($inquiry_node, $user->uid));
+			return $subgroup && $subgroup->uid === $user->uid;
+		case 'all':
+			return $inquiry_node->uid === $user->uid;
+		default:
+			return FALSE;
+	}
+}
+
+function pi_journal_edit_share_investigation($inquiry_node, $uid, $publish, $title, $summary) {
+	$contribution_nid = pi_journal_contribution_find_contribution_nid($inquiry_node, $uid);
+	$node = node_load($contribution_nid);
+	$collaboration = pi_inquiry_groupings_get_coarser_collaboration_level($inquiry_node->nid);
+	$actor = pi_inquiry_groupings_get_actor_for($inquiry_node, $collaboration, $uid);
+
+	if (!$node && $publish) {
+		$node = new stdClass();
+		$node->type = 'pi_journal_contribution';
+		$node->uid = $uid;
+		$node->inquiry_id = $inquiry_node->nid;
+		$node->actor = $actor;
+		$node->collaboration = $collaboration;
+		$node->comment = COMMENT_NODE_READ_WRITE;
+	}
+
+	$node->shared = $publish;
+	$node->title = $title;
+	$node->body = $summary;
+
+	node_save($node);
+}
+
+function theme_pi_journal_share_information($inquiry_node) {
+	global $user;
+
+	$access = pi_journal_edit_share_access($inquiry_node);
+	$contribution_node = pi_journal_contribution_find_contribution_node($inquiry_node, $user->uid);
+  $collaboration_mode = pi_inquiry_groupings_get_coarser_collaboration_level($inquiry_node->nid);
+  
+  $published = $contribution_node && $contribution_node->shared;
+  
+	if ($published) {
+		$link = ' ' . t('Click <a href="@url">here</a> to view it. ', array('@url' => url('journal/contribution/' . $contribution_node->nid)));
+	}
+
+	$all = t('You can see all the published investigations <a href="@url">here</a>. ', array('@url' => url('journal')));
+  
+  $output = '';
+
+	switch ($collaboration_mode) {
+		case 'individual':
+			if ($published) {
+				$output .= '<p>' . t('You have published your investigation. ') . $link . '<p></p>' . $all . '</p>';
+			} else {
+				$output .= '<p>' . t('If you whish, you can submit the results of your investigation to make them public. ') . '<p></p>' . $all . '</p>';
+			}
+			break;
+		case 'group':
+			if ($access) {
+				if ($published) {
+					$output .= '<p>' . t('You have published the results of this investigation. ') . $link . '<p></p>' . $all . '</p>';
+				} else {
+					$output .= '<p>' . t('If you whish, you can submit the results of this investigation to make them public. ') . '<p></p>' . $all . '</p>';
+				}
+			} else {
+				if ($published) {
+					$output .= '<p>' . t('The group owner has published the results of this investigation. ') . $link . '<p></p>' . $all . '</p>';
+				} else {
+					$output .= '<p>' . t('The group owner has not published the results of this investigation. ') . '<p></p>' . $all . '</p>';
+				}
+			}
+			break;
+		case 'all':
+			if ($access) {
+				if ($published) {
+					$output .= '<p>' . t('You have published the results of this investigation. ') . $link . '<p></p>' . $all . '</p>';
+				} else {
+					$output .= '<p>' . t('If you whish, you can submit the results of this investigation to make them public. ') . '<p></p>' . $all . '</p>';
+				}
+			} else {
+				if ($published) {
+					$output .= '<p>' . t('The inquiry owner has published the results of the investigation. ') . $link . $all . '</p>';
+				} else {
+					$output .= '<p>' . t('The inquiry owner has not published the results of the investigation. ') . $all . '</p>';
+				}
+			}
+			break;
+	}
+
+	return $output;
+}
+
+function pi_journal_item_table_row_format($node) {
+  
+	$title = strlen($node->title) > 0 ? check_plain($node->title) : t('Investigation results');
+	$args = array(
+			'@url' => url(),
+			'@title' => $title,
+	);
+	
+  $cell1 = '<b>' . l($title, "journal/contribution/{$node->nid}") . '</b>';
+  if (strlen($node->body) > 0) {
+    $cell1 .= '<p>' . check_markup(nl2br($node->body)) . '</p>';
+  }
+  
+	switch ($node->collaboration) {
+		case 'individual':
+			$u = user_load($node->actor);
+      $cell2 = check_plain($u->name);
+			break;
+		case 'group':
+			$g = node_load($node->actor);
+			$cell2 = t('Group @group', array('@group' => $g->title));
+			break;
+		case 'all':
+      $cell2 = '';
+			break;
+	}
+
+  return array($cell1, $cell2);
+}
+
+function theme_pi_journal_list($items, $inquiry_page_links) {
+	$output = '';
+	foreach ($items as $inquiry_nid => $contributions_data) {
+    
+		$inquiry = node_load($inquiry_nid);
+		if ($inquiry_page_links) {
+			$url = url('journal/inquiry/' . $inquiry_nid, array('absolute' => TRUE));
+			$inquiry_title_text = t('Investigations for <a href="@url"><i>@inquiry</i></a>:', array('@inquiry' => $inquiry->title, '@url' => $url));
+		} else {
+			$inquiry_title_text = t('Investigations for <i>@inquiry</i>:', array('@inquiry' => $inquiry->title));
+		}
+
+		$output .= '<h3>' . $inquiry_title_text . '</h3>';
+    
+    
+
+		$formatted_inquiry_items = array_map(pi_journal_item_table_row_format, $contributions_data['contributions']);
+		$output .= nquire_commons_create_not_expanding_table_block(theme('table', array(t('Investigation'), t('Author')), $formatted_inquiry_items));
+	}
+
+	return $output;
+}

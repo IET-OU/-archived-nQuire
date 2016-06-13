@@ -1,0 +1,342 @@
+<?php
+
+// $Id: nquire_design.module,v 0.1 2010/03/17 MCP $
+
+/**
+ * @file  This module provides the implementation of the Inquiry content type
+ */
+function nquire_structure_widget_theme() {
+    return array(
+        'nquire_structure_widget' => array(
+            'arguments' => array('id' => ''),
+        ),
+        'nquire_structure_widget_view' => array(
+            'arguments' => array('node' => NULL),
+        ),
+        'nquire_structure_widget_base_feature_table' => array(
+            'arguments' => array('id' => '', 'structure' => '[]', 'launcher' => ''),
+        ),
+        'nquire_structure_widget_base_feature_selector' => array(
+            'arguments' => array('id' => '', 'structure' => '[]', 'launcher' => ''),
+        ),
+        'nquire_structure_widget_stages_feature_table' => array(
+            'arguments' => array('id' => '', 'structure' => '[]'),
+        ),
+        'nquire_structure_widget_groups_feature_table' => array(
+            'arguments' => array('id' => '', 'structure' => '[]'),
+        ),
+        'nquire_structure_widget_roles_feature_table' => array(
+            'arguments' => array('id' => '', 'structure' => '[]'),
+        ),
+        'nquire_structure_widget_stage_selector' => array(
+            'arguments' => array('id' => '', 'structure' => '[]'),
+        ),
+        'nquire_structure_widget_share_content_feature_table' => array(
+            'arguments' => array('id' => '', 'structure' => '[]'),
+        ),
+        'nquire_structure_widget_stage_selector' => array(
+            'arguments' => array('id' => '', 'structure' => '[]'),
+        ),
+        'nquire_structure_widget_stage_view' => array(
+            'arguments' => array('id' => '', 'structure' => '[]'),
+        ),
+    );
+}
+
+function theme_nquire_structure_widget_view($node, $item = '') {
+
+    $structure = inquiry_creator_get_inquiry_structure($node->nid);
+
+    if (count($structure) === 0) {
+        $link = l(t('here'), 'creator/' . $node->nid . '/activities');
+        $output = '<p>' . t('There are no phases or activities in this inquiry. Click !link to start creating them.', array('!link' => $link));
+    } else {
+        drupal_add_css(drupal_get_path('module', 'nquire_structure_widget') . '/css/nQuireStructureWidget.css');
+        drupal_add_css(drupal_get_path('module', 'nquire_structure_widget') . '/css/activityIcons.css');
+
+        $output = '<div class="nquire-structure-container">';
+
+        foreach ($structure as $i => $phase) {
+
+
+            $output .= '<div class="nquire-structure-phase-container nquire-structure-item-container">'
+                    . '<div class="item-cell' . ($item == $phase->id ? ' arrow' : '' ) . '" type="phase">'
+                    . '<div class="nquire-structure-tree-bullet-phase"></div>'
+                    . '<div class="nquire-structure-phase">'
+                    . '<div class="item-data">'
+                    . '<div class="nquire-phase-icon">Phase ' . ($i + 1) . ':&nbsp;</div>'
+                    . '<div class="nquire-phase-title">' . $phase->title . '</div>'
+                    . '</div>'
+                    . '</div>';
+            if ($item != $phase->id) {
+                $output .= '&nbsp;&nbsp;<div class="nquire-item-buttons">'
+                        . nquire_commons_form_submit_link(t('edit'), 'creator/' . $node->nid . '/activities/phase/' . $phase->id) . '&nbsp;&nbsp;'
+                        . nquire_commons_form_submit_link(t('delete'), 'creator/' . $node->nid . '/activities/phase/' . $phase->id . '/delete')
+                        . '</div>';
+            }
+            $output .= '</div>';
+
+            foreach ($phase->activities as $j => $activity) {
+                $output .= '<div class="nquire-structure-activity-container nquire-structure-item-container">'
+                        . '<div class="item-cell' . ($item == $activity->id ? ' arrow' : '') .'" type="activity">'
+                        . '<div class="nquire-structure-tree-bullet-activity"></div>'
+                        . '<div class="nquire-structure-activity">'
+                        . '<div class="item-data">'
+                        . '<div class="nquire-activity-icon ' . $activity->type . '"></div>'
+                        . '<div class="nquire-activity-title">' . $activity->title . '</div>'
+                        . '</div>'
+                        . '</div>';
+                if ($item != $activity->id) {
+                    $output .= '&nbsp;&nbsp;<div class="nquire-item-buttons">'
+                            . nquire_commons_form_submit_link(t('edit'), 'creator/' . $node->nid . '/activities/' . $activity->id) . '&nbsp;&nbsp;'
+                            . nquire_commons_form_submit_link(t('delete'), 'creator/' . $node->nid . '/activities/' . $activity->id . '/delete')
+                            . '</div>';
+                }
+                $output .= '</div>'
+                        . '</div>';
+            }
+
+            $output .= '</div>';
+        }
+
+        $output .= '</div>';
+    }
+
+    return $output;
+}
+
+function nquire_structure_widget_create_form_item(&$form, $id, $value) {
+    $form[$id] = array(
+        '#type' => 'hidden',
+        '#required' => FALSE,
+        '#default_value' => $value,
+        '#prefix' => theme('nquire_structure_widget', $id),
+    );
+}
+
+function theme_nquire_structure_widget($id) {
+    nquire_commons_load_javascript_support();
+    nquire_commons_load_nquire_widget_support();
+
+    jquery_ui_add(array('ui.draggable', 'ui.droppable', 'ui.sortable'));
+
+    drupal_add_js(drupal_get_path('module', 'nquire_structure_widget') . '/js/nquireStructureWidget.js');
+    drupal_add_js(drupal_get_path('module', 'nquire_structure_widget') . '/js/jquery.nquireStructureWidget.js');
+    drupal_add_css(drupal_get_path('module', 'nquire_structure_widget') . '/css/nQuireStructureWidget.css');
+    drupal_add_css(drupal_get_path('module', 'nquire_structure_widget') . '/css/activityIcons.css');
+
+    nquire_commons_load_nquire_tooltip_support();
+    
+    $output = "<div style='padding-left:20px;margin-bottom:20px;'><a class='nquire-structure-add-phase' href='#'><b>" . t('[Add new phase]') . "</b></a></div>";
+
+    $output .= "<div nquire-widget='inquiry-structure' data-element-name='$id'></div>";
+
+    $output .= "<div id='nquire-creator-bottom-add-phase' style='padding-left:20px;margin-bottom:20px;display: none;'><a class='nquire-structure-add-phase' href='#'><b>" . t('[Add new phase]') . "</b></a></div>";
+
+    return $output;
+}
+
+function theme_nquire_structure_widget_base_feature_table($id, $structure, $activeItemType, $launcher) {
+    nquire_commons_load_javascript_support();
+    nquire_commons_load_nquire_widget_support();
+    nquire_commons_load_nquire_tooltip_support();
+
+    drupal_add_js(drupal_get_path('module', 'nquire_structure_widget') . '/js/' . $launcher . '.js');
+    drupal_add_js(drupal_get_path('module', 'nquire_structure_widget') . '/js/jquery.structureFeatureTable.js');
+    drupal_add_css(drupal_get_path('module', 'nquire_structure_widget') . '/css/nQuireStructureWidget.css');
+    drupal_add_css(drupal_get_path('module', 'nquire_structure_widget') . '/css/activityIcons.css');
+
+
+    if (strlen($structure) === 0) {
+        $output = '<p>' . t('There are no phases at all!') . '</p>';
+    } else {
+        $structure = json_decode($structure);
+
+        $output = '<div>'
+                . "<div nquire-widget='inquiry-$id' data-element-name='$id' class='nquire-feature-table-container'>"
+                . "<table class='nquire-feature-table'><tr class='structure-feature-list'><td></td></tr>";
+
+        foreach ($structure as $i => $phase) {
+            $activityCount = count($phase->activities);
+
+            $output .= _nquire_structure_widget_create_item_table_row($phase, 'phase', $i, $activeItemType, $activityCount === 0, $i !== 0);
+            foreach ($phase->activities as $j => $activity) {
+                $output .= _nquire_structure_widget_create_item_table_row($activity, 'activity', $i, $activeItemType, $j === $activityCount - 1, FALSE);
+            }
+        }
+
+        $output .= '</table></div></div>';
+    }
+
+    return $output;
+}
+
+function theme_nquire_structure_widget_base_feature_selector($id, $structure, $activeItemType, $launcher) {
+    nquire_commons_load_javascript_support();
+    nquire_commons_load_nquire_widget_support();
+    nquire_commons_load_nquire_tooltip_support();
+
+    drupal_add_js(drupal_get_path('module', 'nquire_structure_widget') . '/js/' . $launcher . '.js');
+    drupal_add_js(drupal_get_path('module', 'nquire_structure_widget') . '/js/jquery.structureFeatureSelector.js');
+    drupal_add_css(drupal_get_path('module', 'nquire_structure_widget') . '/css/nQuireStructureWidget.css');
+    drupal_add_css(drupal_get_path('module', 'nquire_structure_widget') . '/css/activityIcons.css');
+
+
+    if (strlen($structure) === 0) {
+        $output = '<p>' . t('There are no phases at all!') . '</p>';
+    } else {
+        $structure = json_decode($structure);
+
+        $output = '<div>'
+                . "<div nquire-widget='inquiry-$id' data-element-name='$id' class='nquire-feature-table-container'>"
+                . "<table class='nquire-feature-table'><tr class='structure-feature-list'><td></td></tr>";
+
+        foreach ($structure as $i => $phase) {
+            $activityCount = count($phase->activities);
+
+            $output .= _nquire_structure_widget_create_item_table_row($phase, 'phase', $i, $activeItemType, $activityCount === 0, $i !== 0);
+            foreach ($phase->activities as $j => $activity) {
+                $output .= _nquire_structure_widget_create_item_table_row($activity, 'activity', $i, $activeItemType, $j === $activityCount - 1, FALSE);
+            }
+        }
+
+        $output .= '</table></div></div>';
+    }
+
+    return $output;
+}
+
+function _nquire_structure_widget_create_item_table_row($item, $type, $phaseIndex, $activeItemType, $endOfPhase, $phaseAfterFirst) {
+    $isActive = $activeItemType === 'all' || $activeItemType === $type;
+
+    $trClassname = 'structure-tablerow' . ($endOfPhase ? ' structure-tablerow-endofphase' : '') . ($phaseAfterFirst ? ' structure-tablerow-phaseafterfirst' : ' structure-tablerow-phasefirst');
+
+    $attributes = '';
+    if (isset($item->attributes)) {
+        foreach ($item->attributes as $key => $value) {
+            $attributes .= ' ' . $key . '="' . $value . '"';
+        }
+    }
+    $output = "<tr item-id='{$item->id}' type='{$type}' class='$trClassname' $attributes>";
+
+    $tdClassname = 'item-cell' . ($isActive ? ' arrow structure-tablecell-active-item' : '');
+    $output .= "<td><div class='$tdClassname' type='$type'>";
+
+    
+    $output .= "<div class='nquire-structure-tree-bullet-{$type}'></div>";
+    $output .= "<div class='nquire-structure-{$type}'>";
+    if ($type === 'activity') {
+        $output .= "<div class='nquire-activity-icon {$item->type}'></div>";
+    } else if ($type === 'phase') {
+        $output .= "<div class='nquire-phase-icon $phaseIndex'>" . t('Phase ') . ($phaseIndex + 1) . ":&nbsp</div>";
+    }
+    $output .= "<div class='nquire-{$type}-title'>{$item->title}</div>";
+    $output .= "</div>";
+
+
+    $output .= "</div></td></tr>";
+    return $output;
+}
+
+function nquire_structure_stages_table_create_form_item(&$form, $inquiry_nid, $structure, $value) {
+    $form['stages'] = array(
+        '#type' => 'hidden',
+        '#required' => FALSE,
+        '#default_value' => $value,
+        '#prefix' => theme('nquire_structure_widget_stages_feature_table', $inquiry_nid, $structure),
+    );
+}
+
+function theme_nquire_structure_widget_stages_feature_table($inquiry_nid, $structure) {
+    $output = '<p>' . t('Here you can define the status of eath phase, that is, whether each phase is visible or not to the participants. ')
+            . t('You can have several stages and different access levels for each phase in each stage. ') . '</p>'
+            . '<p>' . t('If you create more than one stage, you can <b>select the active stage <a href="!url">here</a></b>.', array('!url' => url("inquiry/$inquiry_nid/stages")))
+            . '</p><p>' . t('The possible values are:') . '</p><ul>'
+            . '<li><b>Not visible</b>: participants cannot see the phase activities.</li>'
+            . '<li><b>Visible</b>: participants can see the phase activities, but cannot modify their answers.</li>'
+            . '<li><b>Editable</b>: participants can see and work on the phase activities.</li>'
+            . '</ul>';
+    $output .= theme('nquire_structure_widget_base_feature_table', 'stages', $structure, 'phase', 'structureStagesFeature');
+    return $output;
+}
+
+function nquire_structure_roles_table_create_form_item(&$form, $id, $structure, $value) {
+    $form[$id] = array(
+        '#type' => 'hidden',
+        '#required' => FALSE,
+        '#default_value' => $value,
+        '#prefix' => theme('nquire_structure_widget_roles_feature_table', $id, $structure),
+    );
+}
+
+function theme_nquire_structure_widget_roles_feature_table($id, $structure) {
+    $output .= theme('nquire_structure_widget_base_feature_table', $id, $structure, 'activity', 'structureRolesFeature');
+    return $output;
+}
+
+function nquire_structure_groups_table_create_form_item(&$form, $id, $structure, $value) {
+    $form[$id] = array(
+        '#type' => 'hidden',
+        '#required' => FALSE,
+        '#default_value' => $value,
+        '#prefix' => theme('nquire_structure_widget_groups_feature_table', $id, $structure),
+    );
+}
+
+function theme_nquire_structure_widget_groups_feature_table($id, $structure) {
+    $output = '<p>' . t('Here you can define how participants collaborate at each activity:') . '<ul>'
+            . '<li>' . t('<b>Individual</b>: each participant does the activity individually.') . '</li>'
+            . '<li>' . t('<b>In groups</b>: participants form groups and collaborate to complete the activities.') . '</li>'
+            . '<li>' . t('<b>All together</b>: all the participants work together in the activities.') . '</li>'
+            . '</ul>';
+
+    $output .= theme('nquire_structure_widget_base_feature_table', $id, $structure, 'phase', 'structureGroupsFeature');
+    return $output;
+}
+
+function nquire_structure_widget_share_content_table_create_form_item(&$form, $id, $structure, $value) {
+    $form[$id] = array(
+        '#type' => 'hidden',
+        '#required' => FALSE,
+        '#default_value' => $value,
+        '#prefix' => theme('nquire_structure_widget_share_content_feature_table', $id, $structure),
+    );
+}
+
+function theme_nquire_structure_widget_share_content_feature_table($id, $structure) {
+    $output = '<p>' . t('Here you can select whether to share your content with other inquiry users.') . '<br/>'
+            . t('Please note that for activities carried out in groups or all the participants together, this decision is made by the group and inquiry owners respectively.') . '</p>';
+
+    global $user;
+    $inquiry_info = pi_info()->getCurrentInquiryInfo();
+
+    if ($inquiry_info->useSubgroups() && !$inquiry_info->getSubgroup($user->uid)) {
+        $output .= '<p>' . t('You do not belong to any group in this inquiry. Therefore, you cannot change the sharing settings for group activities.') . '<p>';
+    }
+
+    $output .= theme('nquire_structure_widget_base_feature_table', $id, $structure, 'activity', 'structureShareContentFeature');
+    return $output;
+}
+
+function nquire_structure_widget_stage_selector_create_form_item(&$form, $id, $structure, $value) {
+    $form[$id] = array(
+        '#type' => 'hidden',
+        '#required' => FALSE,
+        '#default_value' => $value,
+        '#prefix' => theme('nquire_structure_widget_stage_selector', $id, $structure),
+    );
+}
+
+function theme_nquire_structure_widget_stage_selector($id, $structure) {
+    $output = '<p>' . t('Here you can select the active stage for this inquiry.') . '</p>';
+
+    $output .= theme('nquire_structure_widget_base_feature_selector', $id, $structure, 'phase', 'structureStageSelector');
+    return $output;
+}
+
+function theme_nquire_structure_widget_stage_view($id, $structure) {
+    $output = '<p>' . t('Here you can see the currently active.') . '</p>';
+
+    $output .= theme('nquire_structure_widget_base_feature_selector', $id, $structure, 'phase', 'structureStageSelector');
+    return $output;
+}

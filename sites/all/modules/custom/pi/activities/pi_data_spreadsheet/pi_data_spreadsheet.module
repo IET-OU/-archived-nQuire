@@ -1,0 +1,237 @@
+<?php
+
+// $Id: pi_data_spreadsheet.module,v 1.2 2009/06/11 09:55:10 ou_mbg Exp $
+
+/**
+ * @file
+ * Module for creating "pi_data_spreadsheet" node type
+ */
+
+/**
+ * Implementation of hook_node_info().
+ */
+function pi_data_spreadsheet_node_info() {
+
+	return array(
+			'pi_data_spreadsheet' => array(
+					'name' => t('Inquiry data spreadsheet'), // Required.
+					'module' => 'pi_data_spreadsheet', // Required.
+					'description' => t('Analyse data using a spreadsheet'), // Required.
+					'has_title' => FALSE,
+					'has_body' => TRUE,
+					'body_label' => t('Group notes'),
+					'locked' => TRUE)
+	);
+}
+
+/**
+ * Implementation of hook_perm().
+ */
+function pi_data_spreadsheet_perm() {
+	
+}
+
+/**
+ * Implementation of hook_access().
+ */
+function pi_data_spreadsheet_access($op, $node, $account) {
+	return FALSE;
+}
+
+/**
+ * Implementation of hook_form().
+ */
+function pi_data_spreadsheet_form(&$node) {
+
+	$form['body'] = array(
+			'#type' => 'hidden',
+			'#default_value' => $node->body,
+	);
+
+	return $form;
+}
+
+function pi_data_spreadsheet_display_content_in_activity($node, $options) {
+	if (isset($_SERVER['REDIRECT_URL']) && strpos($_SERVER['REDIRECT_URL'], 'undefined') === FALSE) {
+		$spreadsheet = _pi_data_spreadsheet_get_spreadsheet($node, $options['editable']);
+		$output .= theme('pi_data_spreadsheet_grid', $spreadsheet);
+		
+		return array(
+				'mode' => 'singleblock',
+				'content' => $output,
+		);
+	}
+
+	return NULL;
+}
+
+/**
+ * Implementation of hook_view().
+ */
+function pi_data_spreadsheet_view($node, $teaser = FALSE, $page = FALSE) {
+	$node = node_prepare($node, $teaser);
+	return $node;
+}
+
+function pi_data_spreadsheet_theme() {
+	return array(
+			'pi_data_spreadsheet_grid' => array(
+					'arguments' => array('spreadsheet' => NULL),
+			),
+	);
+}
+
+function theme_pi_data_spreadsheet_grid($spreadsheet) {
+
+	_pi_data_spreadsheet_generate_spreadsheet_data_javascript($spreadsheet);
+
+	nquire_commons_load_javascript_support();
+	drupal_add_js(drupal_get_path('module', 'pi_data_spreadsheet') . '/js/pi_data_spreadsheet_grid.js');
+	drupal_add_css(drupal_get_path('module', 'pi_data_spreadsheet') . '/css/pi_data_spreadsheet_grid.css');
+
+	$externalScripts = '<link rel = "stylesheet" type = "text/css" media = "screen" href = "http://www.editgrid.com/static/style/default.css"/>'
+					. '<link rel = "stylesheet" type = "text/css" href = "http://www.editgrid.com/static/style/grid/default.css" />'
+					. '<script type = "text/javascript" src = "http://www.editgrid.com/js/grid.js" ></script>';
+	drupal_set_html_head($externalScripts);
+
+	$output = '<div id="pi_data_spreadsheet_grid_container" style="height: 600px; width: 100%;" ></div>';
+
+	return $output;
+}
+
+function _pi_data_spreadsheet_get_spreadsheet(&$node, $editable) {
+	$key = trim(file_get_contents(drupal_get_path('module', 'pi_data_spreadsheet') . '/data/editgrid_api_app_key'));
+
+	$bt = _pi_data_spreadsheet_create_spreadsheet_token($node, $key, $editable);
+
+	if ($editable) {
+		_pi_data_spreadsheet_update_data($node, $key, $node->body);
+	}
+
+	$result = array(
+			'sessionKey' => $key,
+			'bookName' => $node->body,
+			'bt' => $bt,
+	);
+	return $result;
+}
+
+function _pi_data_spreadsheet_generate_spreadsheet_data_javascript($spreadsheet) {
+	$module = "{"
+					. "  init: function() {"
+					. "    this.bookAccessToken = '{$spreadsheet['bt']}';"
+					. "    this.bookId = '{$spreadsheet['bookName']}';"
+					. "  }"
+					. "}";
+
+	nquire_commons_inject_inline_javascript_module('PiDataSpreadsheetSessionKey', $module);
+}
+
+function _pi_data_spreadsheet_create_spreadsheet_token(&$node, $key, $editable) {
+
+	include_once 'editgrid/editgrid.php';
+
+	$client = new EditGrid(NULL);
+
+	$client->setSessionKey($key);
+
+	if (!$node->body || strlen($node->body) === 0) {
+		$new_book = TRUE;
+		$book_name = $node->nid . '-' . substr(str_shuffle("0123456789abcdefghijklmnopqrstuvwxyz"), 0, 20);
+	} else {
+		$new_book = FALSE;
+		$book_name = $node->body;
+	}
+
+	$workbook_xml = "<workbook><name>{$book_name}</name></workbook>";
+	$result3 = $client->call("workbook.create", array(workspace => "//mine"), $workbook_xml);
+	if (!$result3) {
+		trigger_error('no result from editgrid call', E_USER_ERROR);
+		return FALSE;
+	} else if ($result3->hasError() && $result3->getError()->getCode() != 23) {
+		trigger_error($result3->getError()->toString(), E_USER_ERROR);
+		return FALSE;
+	}
+
+	if ($new_book) {
+		$node->body = $book_name;
+		$node->revision = true;
+		node_save($node);
+	}
+
+	$result4 = $client->call("workbook.createAccessToken", array(workbook => "user/evilfer/$book_name", permission => ($editable ? "read-write" : "read")));
+	$token = $result4->getValue();
+
+	return $token;
+}
+
+function _pi_data_spreadsheet_update_data($node, $session_key, $book_name) {
+	include_once 'CellRequest.php';
+
+	$client = new EditGrid(NULL);
+	$client->setSessionKey($session_key);
+
+	$inquiry_nid = pi_inquiry_find_inquiry_for_content($node->nid);
+	$data_activities = pi_sort_data_get_activities($inquiry_nid);
+
+	foreach ($data_activities as $i => $activity_nid) {
+		$activity_node = node_load($activity_nid);
+
+		$worksheet_name = 'Data' . ($i + 1);
+
+		$result_list = $client->call("worksheet.get", array('worksheet' => "user/evilfer/$book_name/$worksheet_name"));
+		if ($result_list->hasError()) {
+			if ($result_list->getError()->getCode() == 22) {
+				$worksheet_xml = "<worksheet><name>$worksheet_name</name></worksheet>";
+				$result_create = $client->call("worksheet.create", array('workbook' => "user/evilfer/$book_name", index => '0'), $worksheet_xml);
+				if ($result_create->hasError()) {
+					return FALSE;
+				}
+			} else {
+				return FALSE;
+			}
+		}
+
+		$cells = new PiDataSpreadSheetCellRequest();
+
+		$cells->addCell(0, 0, t('Data for activity: @title', array('@title' => $activity_node->title)));
+		$cells->addCell(0, 1, t('This sheet is created automatically, Please do not modify it!'));
+
+		$data_nids = pi_sort_data_get_all_data_for_use_in_content_nid($node->nid, $activity_nid);
+		$data = array_map(function($nid) {
+							return node_load($nid);
+						}, $data_nids);
+
+
+		$measure_nids = pi_methodology_get_measures_for_use_in_content_node($node->nid, $activity_nid);
+
+		$x = 0;
+		foreach ($measure_nids as $measure_nid => $required) {
+			$measure = node_load($measure_nid);
+			$submeasures = pi_data_tools_measure_plugin_get_submeasure_keys($measure);
+			if (!$submeasures) {
+				$submeasures = array($measure_nid);
+			}
+
+			foreach ($submeasures as $submeasure_key) {
+				$cells->addCell($x, 3, pi_data_tools_measure_plugin_submeasure_get_title_for_chart($submeasure_key) . ($required ? '*' : ''));
+				$y = 4;
+				foreach ($data as $datum) {
+					if (isset($datum->values[$measure_nid])) {
+						$value = $datum->values[$measure_nid];
+						pi_data_tools_measure_plugin_submeasure_get_value_for_chart($submeasure_key, $value);
+						$cells->addCell($x, $y, $value);
+					}
+					$y++;
+				}
+				$x++;
+			}
+		}
+
+		$call_data = $cells->callData();
+		$range = "$worksheet_name!{$call_data['range']}";
+		$client->call("cell.set", array('workbook' => "user/evilfer/$book_name", 'range' => $range, 'returnRange' => $range), $call_data['cells']);
+	}
+	return;
+}
+

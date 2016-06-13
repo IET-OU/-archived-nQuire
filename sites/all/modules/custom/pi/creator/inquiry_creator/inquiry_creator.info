@@ -1,0 +1,11 @@
+; $Id: pi_authoring.info, 20100303 MCP $
+name = nQuire Inquiry Creator
+project = nquire
+description = nQuire base module for the Inquiry Creator 
+package = nQuire Creator
+dependencies[] = nquire_commons
+dependencies[] = nquire_structure_widget
+dependencies[] = inquiry_available_features
+
+core = 6.x
+version = "6.x-13.01-dev"

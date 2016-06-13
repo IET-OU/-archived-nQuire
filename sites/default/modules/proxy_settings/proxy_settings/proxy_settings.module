@@ -6,9 +6,10 @@
 
 function proxy_settings_help($section='') {
 
-	$output = 'Help';
+	//$output = 'Help';
 
-	return $output;
+	//return $output;
+	return '';
 }
 
 function proxy_settings_perm() {

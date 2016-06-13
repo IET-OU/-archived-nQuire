@@ -1,0 +1,102 @@
+<?php
+
+// $Id: pi_phase.install,v 0.1 MCP$
+
+/**
+ * Implementation of hook_install().
+ */
+function pi_phase_install() {
+	// Create tables.
+	drupal_install_schema('pi_phase');
+	//Options are status, promote, sticky, revision
+	variable_set("node_options_pi_phase", array('status'));
+	variable_set("comment_pi_phase", COMMENT_NODE_DISABLED);
+	variable_set('upload_pi_phase', 0);
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function pi_phase_uninstall() {
+	// Remove tables.
+	drupal_uninstall_schema('pi_phase');
+	//Options are status, promote, sticky, revision
+	variable_del("node_options_pi_phase");
+	variable_del("comment_pi_phase");
+	variable_del('upload_pi_phase');
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+function pi_phase_schema() {
+	$schema = array();
+
+	$schema['pi_phase'] = array(
+			'description' => 'PI Inquiry Phase',
+			'fields' => array(
+					'nid' => array(
+							'description' => 'node id',
+							'type' => 'int',
+							'unsigned' => TRUE,
+							'not null' => TRUE,
+							'default' => 0),
+					'vid' => array(
+							'description' => 'The current vid version identifier',
+							'type' => 'int',
+							'unsigned' => TRUE,
+							'not null' => TRUE,
+							'default' => 0),
+					'inquiry_nid' => array(
+							'description' => 'The nid for the inquiry this phase is attached to.',
+							'type' => 'int',
+							'unsigned' => TRUE,
+							'not null' => TRUE,
+							'default' => 0),
+					'collaboration' => array(
+							'type' => 'text',
+							'size' => 'small',
+							'description' => 'The collaboration model of the phase.'),
+					'weight' => array(
+							'description' => 'The default layout order of the phase in the inquiry.',
+							'type' => 'int',
+							'unsigned' => TRUE,
+							'not null' => TRUE,
+							'default' => 0)),
+			'primary key' => array('nid', 'vid'),
+			'unique keys' => array('vid' => array('vid')),
+			'indexes' => array('nid' => array('nid'))
+	);
+
+
+	$schema['pi_phase_preference'] = array(
+			'description' => 'PI Phase Preference.',
+			'fields' => array(
+					'ppp_id' => array(
+							'type' => 'serial',
+							'unsigned' => TRUE,
+							'not null' => TRUE,
+							'description' => ''),
+					'show_phase' => array(
+							'type' => 'blob',
+							'size' => 'normal',
+							'description' => ''),
+					'uid' => array(
+							'type' => 'int',
+							'unsigned' => TRUE,
+							'not null' => TRUE,
+							'default' => NULL,
+							'description' => 'User id'),
+					'gid' => array(
+							'type' => 'int',
+							'unsigned' => TRUE,
+							'not null' => TRUE,
+							'default' => NULL,
+							'description' => 'Group id')
+			),
+			'primary key' => array('ppp_id'),
+			'indexes' => array('uid' => array('uid'),
+					'gid' => array('gid')),
+	);
+	return $schema;
+}

@@ -1,0 +1,344 @@
+
+
+
+
+a {
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+
+#header-inner,
+#footer {
+}
+
+#header a {
+  font-weight: bold;
+}
+
+#navigation {
+}
+
+.sidebar .block h2.title a {
+}
+
+
+.sidebar .block h2.title,
+#content .block h2.titl,
+.sidebar .block .content,
+#content .block .content {
+  border-width: 4px;
+  border-style: solid;
+}
+
+.sidebar .block h2.title,
+#content .block h2.title {
+  font-size: 1em;
+  padding: 0 4px 0 4px;
+}
+
+.sidebar .block .content,
+#content .block .content {
+  font-size: 1em;
+  margin: 0;
+  border-top: none;
+  padding: 4px;
+}
+
+
+.region-sidebar-first .no-header .content {
+}
+
+#mission {
+  border-width: 1px;
+  border-style: solid;
+  padding: 10px;
+  margin-bottom: 20px;
+}
+
+
+/** ----------------------- FORUMS ---------------------------------------- **/
+
+.node-type-forum h3.title {
+  font-size: 150%;
+  margin: 15px 0px 0px 0px;
+  padding-left: 0px;
+}
+
+.node-type-forum .submitted {
+  font-size: 90%;
+}
+
+.node-type-forum .content {
+  //margin-top: 10px;
+}
+
+.forum-topic-navigation {
+  clear: both;
+  margin-top: 15px;
+}
+
+#forum ul.links {
+  margin-top: 15px;
+}
+
+#forum li.forum {
+  margin: 0;
+  padding: 0;
+  font-weight: bold;
+}
+
+#forum tr td.forum {
+  background-image: none;
+}
+
+td.forum .name {
+  font-size: 110%;
+}
+
+td.forum .name a {
+  font-weight: bold;
+}
+
+/** -------------------------- MISC -------------------------------- **/
+
+/* Aggregator, blog, and forum more link */
+.more-link {
+  text-align: right;
+}
+
+
+/** ---- nQuire phases ----------------------------   **/
+
+.phase_activity {
+  border-width: 4px;
+  border-style: solid;
+  margin-bottom: 15px;
+}
+
+
+.phase_activity > div {
+  padding: 4px;
+}
+
+.phase_activity  .phase_activity_content_wrapper {
+  padding: 12px 6px 6px 6px;
+}
+
+.phase_activity  .phase_activity_table {
+  margin: 0px;
+}
+
+.phase_activity  .phase_activity_table  td {
+  vertical-align: top;
+}
+
+.phase_activity  .phase_activity_table  td > div {
+  padding: 6px 6px 6px 0px;
+}
+
+.phase_activity  .phase_activity_table  td.phase_activity_content_cell > a > div, 
+.phase_activity  .phase_activity_table  td.phase_activity_content_cell > div {
+  padding: 6px 12px;
+}
+
+.phase_activity  .phase_activity_table  td.phase_activity_label {
+  text-align: right;
+  font-weight: bold;
+  white-space: nowrap;
+  font-size: .9em;
+}
+
+.phase_activity .phase_activity_description {
+  padding-bottom: 18px;
+}
+
+.phase_activity  .phase_activity_content_cell {
+  width: 99%;
+}
+
+.phase_activity  .phase_activity_content {
+  background: white;
+}
+
+.phase_activity  .phase_activity_feedback {
+  margin: 0px 20px;
+  background: #e4e4e4;
+  border: 1px solid #c0c0c0;
+  border-radius: 5px;
+  color: #444;
+}
+
+
+.phase_activity  .phase_activity_no_content {
+  background: lightgrey;
+}
+
+.phase_activity  .phase_activity_content,
+.phase_activity  .phase_activity_no_content {
+  margin-bottom: 5px;
+  min-height: 16px;
+}
+
+.phase_activity > .phase_activity_title {
+  font-weight: bold;
+  padding: 0 0 4px 0;
+}
+
+
+.phase_activity_access {
+  font-size: .75em;
+}
+
+/*** colored phases ****/ 
+
+.phase_activity_a {border-color: #b0b70f;}
+.phase_activity_a > .phase_activity_content_wrapper {background: #eaeccb;}
+.phase_activity_a > .phase_activity_title {background: #b0b70f; color: white;}
+
+.phase_activity_b {border-color: #0cadaa;}
+.phase_activity_b > .phase_activity_content_wrapper {background: #d7ecea;}
+.phase_activity_b > .phase_activity_title {background: #0cadaa; color: white;}
+
+.phase_activity_c {border-color: #00ace2;}
+.phase_activity_c > .phase_activity_content_wrapper {background: #d5ebf8;}
+.phase_activity_c > .phase_activity_title {background: #00ace2; color: white;}
+
+.phase_activity_d {border-color: #756dab;}
+.phase_activity_d > .phase_activity_content_wrapper {background: #e3e1ef;}
+.phase_activity_d > .phase_activity_title {background: #756dab; color: white;}
+
+.phase_activity_e {border-color: #c4388a;}
+.phase_activity_e > .phase_activity_content_wrapper {background: #f7d2e3;}
+.phase_activity_e > .phase_activity_title {background: #c4388a; color: white;}
+
+.phase_activity_f {border-color: #dc1340;}
+.phase_activity_f > .phase_activity_content_wrapper {background: #f7d1c9;}
+.phase_activity_f > .phase_activity_title {background: #dc1340; color: white;}
+
+.phase_activity_g {border-color: #ea620d;}
+.phase_activity_g > .phase_activity_content_wrapper {background: #fbd4b5;}
+.phase_activity_g > .phase_activity_title {background: #ea620d; color: white;}
+
+.phase_activity_h {border-color: #fcc724;}
+.phase_activity_h > .phase_activity_content_wrapper {background: #feeec8;}
+.phase_activity_h > .phase_activity_title {background: #fcc724; color: white;}
+
+
+table.sortable thead th:hover {
+  text-decoration: underline;
+}
+
+.simplemenu-block {
+  z-index: 9998;
+}
+
+
+.nquire-item-handle {
+  width: 16px;
+  height: 16px;
+  background: url(../images/arrow_updown.png) center no-repeat;
+  cursor: move;
+  display: inline-block;
+}
+
+
+.pi_register_forms_item {
+  display:none;
+}
+
+.phase_activity_link img {
+  display: inline;
+}
+
+
+.nquire_page_section {
+  padding: 1em;
+  background: #eeeeee;
+  margin-bottom: 1em;
+}
+
+.nquire_page_section_title {
+  font-weight: bold;
+  font-size: 1.5em;
+  color: #444;
+}
+
+.nquire_page_section_content {
+  margin-top: .5em;
+  margin-left: 1em;
+}
+
+.nquire_phase_banner {
+  position:absolute;
+  right: 0px;
+  top: 0px;
+  padding: .4em .5em;
+  border: 2px solid #666;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  border-bottom-left-radius: 8px;
+  background: #f8f8f8;
+  color: #222;
+
+}
+
+.nquire_button_link {
+  padding: .25em 1em;
+  border-radius: 3px;
+}
+
+.nquire_button_link_form {background: #d0d0d0;}
+.nquire_button_link_form:hover {background: #d8d8d8;}
+
+.nquire_button_link_activity_work {background: #d0d0ff; padding: .4em 1em;}
+.nquire_button_link_activity_work:hover {background: #d8d8ff;}
+
+.nquire_button_link_activity_work_small {background: #e0e0ff; padding: .2em 1em;}
+.nquire_button_link_activity_work_small:hover {background: #e8e8ff;}
+
+.nquire_button_link_pag {background: #d0d0d0; padding: .2em 1em;}
+.nquire_button_link_pag:hover {background: #d8d8d8;}
+
+.nquire_button_link_pag_small {background: #d0d0d0; padding: .1em .5em;}
+.nquire_button_link_pag_small:hover {background: #d8d8d8;}
+
+.nquire_button_link_phase_banner {background: #d0d0d0; padding: .1em .5em;}
+.nquire_button_link_phase_banner:hover {background: #d8d8d8;}
+
+.nquire_button_link_front_login {background: #d0d0d0;}
+.nquire_button_link_front_login:hover {background: #d8d8d8;}
+
+.nquire_button_link_front_join {background: #888; color: white;}
+.nquire_button_link_front_join:hover {background: #4a4;}
+
+.nquire_button_link_front_resume {background: #444; color: white;}
+.nquire_button_link_front_resume:hover {background: #d44;}
+
+
+.nquire_button_link_previous, 
+.nquire_button_link_next {color: white; font-size: 10px; padding: .2em .5em;}
+
+.nquire_button_link_previous:hover, 
+.nquire_button_link_next:hover {text-decoration: underline;}
+
+.nquire_button_link_next {margin-left: 20px;}
+.nquire_button_link_previous {margin-right: 20px;}
+
+
+.nquire-paginator-item, .nquire-paginator-active {
+  padding: 8px 16px;
+  border-radius: 5px;
+  background: #ddd;
+  font-weight: bold;
+  margin: 0px 1px;
+}
+
+.nquire-paginator-active {
+  color: #777;
+}
+
+.nquire-paginator-item {
+}

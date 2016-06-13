@@ -1050,9 +1050,9 @@ function comment_render($node, $cid = 0) {
       $output .= comment_form_box(array('nid' => $nid), t('Post new comment'));
     }
 
-    if ($output) {
+    //if ($output) {
       $output = theme('comment_wrapper', $output, $node);
-    }
+    //}
   }
 
   return $output;
@@ -1819,7 +1819,6 @@ function theme_comment_post_forbidden($node) {
  * Process variables for comment-wrapper.tpl.php.
  *
  * @see comment-wrapper.tpl.php
- * @see theme_comment_wrapper()
  */
 function template_preprocess_comment_wrapper(&$variables) {
   // Provide contextual information.

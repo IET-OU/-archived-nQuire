@@ -1,0 +1,80 @@
+<?php
+
+// $Id: pi_data.install,v 1.2 2009/06/11 09:55:10 ou_mbg Exp $
+
+/**
+ * Implementation of pi_data_install().
+ */
+function pi_feeds_install() {
+	drupal_install_schema('pi_feeds');
+}
+
+/**
+ * Implementation of pi_data_uninstall().
+ */
+function pi_feeds_uninstall() {
+	// Remove tables.
+	drupal_uninstall_schema('pi_feeds');
+}
+
+/**
+ * Implementation of pi_data_schema().
+ */
+function pi_feeds_schema() {
+	$schema['pi_feeds'] = array(
+			'description' => t('PI feeds'),
+			'fields' => array(
+					'type' => array(
+							'description' => t('feed type'),
+							'type' => 'text',
+							'size' => 'small',
+					),
+					'context' => array(
+							'description' => t('feed context (an inquiry nid)'),
+							'type' => 'int',
+							'unsigned' => TRUE,
+							'not null' => TRUE,
+							'default' => 0,
+					),
+					'topic' => array(
+							'description' => t('the nid of the node that acts as feed topic'),
+							'type' => 'int',
+							'unsigned' => TRUE,
+							'not null' => TRUE,
+							'default' => 0,
+					),
+					'object' => array(
+							'description' => t('the nid of the node on which the event has been done'),
+							'type' => 'int',
+							'unsigned' => TRUE,
+							'not null' => FALSE,
+					),
+					'object_type' => array(
+							'description' => t('the type of object node'),
+							'type' => 'text',
+							'size' => 'small',
+					),
+					'event' => array(
+							'description' => t('feed event'),
+							'type' => 'text',
+							'size' => 'small',
+					),
+					'uid' => array(
+							'description' => t('user that generates the activity'),
+							'type' => 'int',
+							'unsigned' => TRUE,
+							'not null' => TRUE,
+							'default' => 0),
+					'timestamp' => array(
+							'description' => 'A Unix timestamp indicating when the challenge was generated.',
+							'type' => 'int',
+							'not null' => TRUE,
+							'default' => 0,
+					),
+			),
+			'indexes' => array(),
+	);
+
+
+	return $schema;
+}

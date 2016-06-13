@@ -1,0 +1,27 @@
+<?php
+
+/**
+ * Implementation of hook_install(): registers the VM with
+ * the authoring tool.
+ */
+function vm_designer_install() {
+  inquiry_available_features_register('tool', 'vm', 'vm_designer');
+  
+  inquiry_available_features_register('measure', 'vm_snapshot', 'vm_designer');
+  inquiry_available_features_register('measure', 'vm_length', 'vm_designer');
+  inquiry_available_features_register('measure', 'vm_annotation', 'vm_designer');
+  inquiry_available_features_register('measure', 'vm_color', 'vm_designer');
+}
+
+/**
+ * Implementation of hook_uninstall(): removes the registered activities.
+ */
+function vm_designer_uninstall() {
+  inquiry_available_features_forget('tool', 'vm');
+  
+	inquiry_available_features_forget('measure', 'vm_snapshot');
+  inquiry_available_features_forget('measure', 'vm_designer');
+  inquiry_available_features_forget('measure', 'vm_annotation');
+  inquiry_available_features_forget('measure', 'vm_color');
+}
+

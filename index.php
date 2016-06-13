@@ -11,6 +11,9 @@
  * See COPYRIGHT.txt and LICENSE.txt.
  */
 
+error_reporting(0);
+ini_set('display_errors','On');
+
 require_once './includes/bootstrap.inc';
 drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
 

@@ -1,0 +1,33 @@
+
+#inquiry_creator_metadata_table,
+#inquiry_creator_metadata_table tr, 
+#inquiry_creator_metadata_table td {
+  border:none;
+  background: transparent;
+}
+
+#inquiry_creator_metadata_table td {
+  vertical-align: top;
+  padding: 0px;
+}
+
+#inquiry_creator_metadata_table tr td {
+  padding-bottom: 5px;
+}
+
+
+#inquiry_creator_metadata_table td.inquiry_creator_metadata_table_header {
+  font-weight: bold;
+  text-align: right;
+  padding-right: 10px;
+}
+
+img.inquiry_creator_metadata_table_image {
+  max-height: 100px;  
+  margin-right: 10px;
+}
+
+#inquiry_creator_metadata_form_image {
+  max-width: 300px;
+  max-height: 400px;
+}

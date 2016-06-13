@@ -1,0 +1,46 @@
+
+
+div.measure_table {
+}
+
+div.measure_region {
+	border: 1px solid #6e6e6e;
+	margin: 5px 5px 15px 0;
+	background: white;
+}
+
+div.measure_region_title {
+	background: #e4e4e4;
+	padding: 3px;
+	font-size: .8em;
+}
+
+div.measure_container {
+	padding: 15px 5px 5px 30px;
+}
+
+div.measure_item {
+	padding-bottom: 0px;
+	min-height: 24px;
+	vertical-align: bottom;
+}
+
+div.measure_mandatory {
+	font-style: italic;
+}
+
+div.measure_item > div {
+  text-indent: -17px;
+  padding-left: 17px;
+  padding-bottom: 6px;
+}
+
+div.measure_container.ui-sortable > div.measure_item.measure_selectable > div {
+  text-indent: -24px;
+  padding-left: 24px;
+}
+
+div.measure_item_content {
+	/*display: inline-block;*/
+	background: white;
+}

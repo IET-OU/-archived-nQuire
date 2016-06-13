@@ -1,0 +1,25 @@
+
+
+.item-edit-form-container {
+  border-width: 5px;
+  border-style: solid;
+  border-radius: 15px;
+  padding: 5px 15px 10px 15px;
+  
+  position: relative;
+}
+
+.item-edit-form-container-activity {
+  border-color: #aabb99;
+  background: white;
+}
+
+.item-edit-form-container-phase {
+  border-color: #aa99bb;
+  background: white;
+}
+
+.item-edit-form-container-measure {
+  border-color: #bbaa99;
+  background: white;
+}

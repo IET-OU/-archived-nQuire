@@ -1,0 +1,106 @@
+a.logout:hover {
+  text-decoration: underline;
+}
+
+a.logout {
+  padding: 2px;
+  font-weight: bold;
+}
+
+div.logout {
+  float: right;
+  font-weight: bold;
+}
+
+div.nquire_header {
+  display: inline-block;
+  padding: 10px 8px;
+}
+
+div.nquire_header > div {
+  vertical-align: middle;
+  display: inline-block;
+  margin-right: 20px;
+  font-size: 2em;
+  font-weight: bold;
+  height: 50px;
+  line-height: 50px;
+}
+
+div.nquire_header a {
+  color: white;
+}
+
+.nquire_username_block {
+  float:right;
+}
+
+.nquire_username_block > div {
+  text-align: right;
+}
+
+.block.block-pi_header {
+  margin: 0 0 0 0;
+}
+
+.nquire_username_block > .nquire_username_username > a {
+  color: white;
+}
+
+a.nquire_username_action {
+  color: #7e8;
+}
+a.nquire_username_action:hover {
+  color: white;
+}
+
+.nquire_username_block .form-item {
+  margin: 0px 0px;
+}
+
+
+div.nquire {
+  float: left;
+}
+
+
+h1.nquire {
+
+}
+
+div.pi_header_carousel {
+  height:16px;
+  width:100%;
+  text-align:center;
+  background: white;
+}
+
+div.pi_header_carousel_item {
+  display: inline-block;
+  margin: 4px 8px;
+  height: 8px;
+  width: 8px;
+  border-radius: 50%;
+  background: lightgray;
+  cursor: pointer;
+}
+
+div.pi_header_carousel_item.pi_header_carousel_active {
+  background: lightblue;
+}
+
+div.pi_header_image_container {
+  height:281px;
+  width:960px;
+  display:inline-block;
+  text-align:left;
+  position: relative;
+}
+
+div.pi_header_image_container > img {
+  position: absolute;
+  top: 0px;
+  left: 10px;
+}
+
+
